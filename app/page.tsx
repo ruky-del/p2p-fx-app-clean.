@@ -14,6 +14,13 @@ type HistoryItem = {
   time: string;
 };
 
+type MarketplaceItem = {
+  seller: string;
+  pair: string;
+  rate: string;
+  amount: string;
+};
+
 export default function Home() {
   const [amount, setAmount] = useState("");
   const [buyRate, setBuyRate] = useState("2500");
@@ -23,10 +30,18 @@ export default function Home() {
   const [action, setAction] = useState<ActionType>("");
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginMessage, setLoginMessage] = useState("");
+
+  const marketplace: MarketplaceItem[] = [
+    { seller: "Ruky FX", pair: "USD → TZS", rate: "2500", amount: "500" },
+    { seller: "Amina Exchange", pair: "GBP → TZS", rate: "3200", amount: "300" },
+    { seller: "Global Pesa", pair: "EUR → TZS", rate: "2700", amount: "700" },
+  ];
+
   const activeRate =
-    action === "SELL"
-      ? Number(sellRate) || 0
-      : Number(buyRate) || 0;
+    action === "SELL" ? Number(sellRate) || 0 : Number(buyRate) || 0;
 
   const total = useMemo(() => {
     const a = Number(amount) || 0;
@@ -70,6 +85,15 @@ export default function Home() {
     setToCurrency(oldFrom);
   };
 
+  const handleLogin = () => {
+    if (!email || !password) {
+      setLoginMessage("Please enter email and password.");
+      return;
+    }
+
+    setLoginMessage(`Logged in as ${email}`);
+  };
+
   return (
     <main
       style={{
@@ -81,327 +105,408 @@ export default function Home() {
     >
       <div
         style={{
-          maxWidth: 760,
+          maxWidth: 920,
           margin: "0 auto",
-          background: "#ffffff",
-          borderRadius: 20,
-          boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-          overflow: "hidden",
+          display: "grid",
+          gap: 20,
         }}
       >
         <div
           style={{
             background: "#111827",
             color: "#ffffff",
+            borderRadius: 20,
             padding: "24px 28px",
           }}
         >
-          <h1 style={{ margin: 0, fontSize: 32 }}>P2P FX App</h1>
+          <h1 style={{ margin: 0, fontSize: 34 }}>P2P FX App</h1>
           <p style={{ margin: "8px 0 0", color: "#d1d5db" }}>
-            Buy and sell foreign currency easily.
+            Demo app with FX calculator, login UI, and marketplace preview.
           </p>
         </div>
 
-        <div style={{ padding: 28 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.2fr 0.8fr",
+            gap: 20,
+          }}
+        >
           <div
             style={{
-              display: "grid",
-              gap: 16,
-              gridTemplateColumns: "1fr",
-              marginBottom: 24,
+              background: "#ffffff",
+              borderRadius: 20,
+              padding: 24,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
             }}
           >
-            <div>
-              <label
+            <h2 style={{ marginTop: 0 }}>FX Calculator</h2>
+
+            <div style={{ display: "grid", gap: 16 }}>
+              <div>
+                <label style={{ display: "block", marginBottom: 8, fontWeight: 700 }}>
+                  Amount
+                </label>
+                <input
+                  type="number"
+                  placeholder="Enter amount"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: 14,
+                    borderRadius: 10,
+                    border: "1px solid #d1d5db",
+                    fontSize: 16,
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <div
                 style={{
-                  display: "block",
-                  marginBottom: 8,
-                  fontWeight: 700,
-                  color: "#111827",
+                  display: "grid",
+                  gridTemplateColumns: "1fr auto 1fr",
+                  gap: 12,
+                  alignItems: "end",
                 }}
               >
-                Amount
-              </label>
-              <input
-                type="number"
-                placeholder="Enter amount"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                <div>
+                  <label style={{ display: "block", marginBottom: 8, fontWeight: 700 }}>
+                    From Currency
+                  </label>
+                  <select
+                    value={fromCurrency}
+                    onChange={(e) => setFromCurrency(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: 14,
+                      borderRadius: 10,
+                      border: "1px solid #d1d5db",
+                      fontSize: 16,
+                      boxSizing: "border-box",
+                    }}
+                  >
+                    <option value="USD">USD</option>
+                    <option value="GBP">GBP</option>
+                    <option value="EUR">EUR</option>
+                    <option value="TZS">TZS</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={swapCurrencies}
+                  style={{
+                    padding: "12px 16px",
+                    border: "none",
+                    borderRadius: 10,
+                    background: "#e5e7eb",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    height: 48,
+                  }}
+                >
+                  ⇄
+                </button>
+
+                <div>
+                  <label style={{ display: "block", marginBottom: 8, fontWeight: 700 }}>
+                    To Currency
+                  </label>
+                  <select
+                    value={toCurrency}
+                    onChange={(e) => setToCurrency(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: 14,
+                      borderRadius: 10,
+                      border: "1px solid #d1d5db",
+                      fontSize: 16,
+                      boxSizing: "border-box",
+                    }}
+                  >
+                    <option value="TZS">TZS</option>
+                    <option value="USD">USD</option>
+                    <option value="GBP">GBP</option>
+                    <option value="EUR">EUR</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: "block", marginBottom: 8, fontWeight: 700 }}>
+                  Buy Rate
+                </label>
+                <input
+                  type="number"
+                  value={buyRate}
+                  onChange={(e) => setBuyRate(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: 14,
+                    borderRadius: 10,
+                    border: "1px solid #d1d5db",
+                    fontSize: 16,
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", marginBottom: 8, fontWeight: 700 }}>
+                  Sell Rate
+                </label>
+                <input
+                  type="number"
+                  value={sellRate}
+                  onChange={(e) => setSellRate(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: 14,
+                    borderRadius: 10,
+                    border: "1px solid #d1d5db",
+                    fontSize: 16,
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 24 }}>
+              <button
+                onClick={() => handleAction("BUY")}
                 style={{
-                  width: "100%",
-                  padding: 14,
+                  padding: "12px 20px",
+                  border: "none",
                   borderRadius: 10,
-                  border: "1px solid #d1d5db",
-                  fontSize: 16,
-                  boxSizing: "border-box",
+                  background: "#16a34a",
+                  color: "#ffffff",
+                  fontWeight: 700,
+                  cursor: "pointer",
                 }}
-              />
+              >
+                Buy
+              </button>
+
+              <button
+                onClick={() => handleAction("SELL")}
+                style={{
+                  padding: "12px 20px",
+                  border: "none",
+                  borderRadius: 10,
+                  background: "#2563eb",
+                  color: "#ffffff",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                Sell
+              </button>
+
+              <button
+                onClick={resetForm}
+                style={{
+                  padding: "12px 20px",
+                  border: "none",
+                  borderRadius: 10,
+                  background: "#dc2626",
+                  color: "#ffffff",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                Delete
+              </button>
             </div>
 
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "1fr auto 1fr",
-                gap: 12,
-                alignItems: "end",
+                background: "#f9fafb",
+                border: "1px solid #e5e7eb",
+                borderRadius: 14,
+                padding: 20,
+                marginTop: 24,
               }}
             >
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: 8,
-                    fontWeight: 700,
-                    color: "#111827",
-                  }}
-                >
-                  From Currency
-                </label>
-                <select
-                  value={fromCurrency}
-                  onChange={(e) => setFromCurrency(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: 14,
-                    borderRadius: 10,
-                    border: "1px solid #d1d5db",
-                    fontSize: 16,
-                    boxSizing: "border-box",
-                  }}
-                >
-                  <option value="USD">USD</option>
-                  <option value="GBP">GBP</option>
-                  <option value="EUR">EUR</option>
-                  <option value="TZS">TZS</option>
-                </select>
-              </div>
-
-              <button
-                onClick={swapCurrencies}
-                style={{
-                  padding: "12px 16px",
-                  border: "none",
-                  borderRadius: 10,
-                  background: "#e5e7eb",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  height: 48,
-                }}
-              >
-                ⇄
-              </button>
-
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: 8,
-                    fontWeight: 700,
-                    color: "#111827",
-                  }}
-                >
-                  To Currency
-                </label>
-                <select
-                  value={toCurrency}
-                  onChange={(e) => setToCurrency(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: 14,
-                    borderRadius: 10,
-                    border: "1px solid #d1d5db",
-                    fontSize: 16,
-                    boxSizing: "border-box",
-                  }}
-                >
-                  <option value="TZS">TZS</option>
-                  <option value="USD">USD</option>
-                  <option value="GBP">GBP</option>
-                  <option value="EUR">EUR</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: 8,
-                  fontWeight: 700,
-                  color: "#111827",
-                }}
-              >
-                Buy Rate
-              </label>
-              <input
-                type="number"
-                value={buyRate}
-                onChange={(e) => setBuyRate(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: 14,
-                  borderRadius: 10,
-                  border: "1px solid #d1d5db",
-                  fontSize: 16,
-                  boxSizing: "border-box",
-                }}
-              />
-            </div>
-
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: 8,
-                  fontWeight: 700,
-                  color: "#111827",
-                }}
-              >
-                Sell Rate
-              </label>
-              <input
-                type="number"
-                value={sellRate}
-                onChange={(e) => setSellRate(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: 14,
-                  borderRadius: 10,
-                  border: "1px solid #d1d5db",
-                  fontSize: 16,
-                  boxSizing: "border-box",
-                }}
-              />
+              <h3 style={{ marginTop: 0 }}>Summary</h3>
+              <p><strong>Selected Action:</strong> {action || "None"}</p>
+              <p><strong>Pair:</strong> {fromCurrency} → {toCurrency}</p>
+              <p><strong>Amount:</strong> {amount || 0} {fromCurrency}</p>
+              <p><strong>Buy Rate:</strong> {buyRate}</p>
+              <p><strong>Sell Rate:</strong> {sellRate}</p>
+              <p><strong>Active Rate:</strong> {action ? activeRate : 0}</p>
+              <p><strong>Total:</strong> {toCurrency} {total.toLocaleString()}</p>
             </div>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              flexWrap: "wrap",
-              marginBottom: 28,
-            }}
-          >
-            <button
-              onClick={() => handleAction("BUY")}
+          <div style={{ display: "grid", gap: 20 }}>
+            <div
               style={{
-                padding: "12px 20px",
-                border: "none",
-                borderRadius: 10,
-                background: "#16a34a",
-                color: "#ffffff",
-                fontWeight: 700,
-                cursor: "pointer",
+                background: "#ffffff",
+                borderRadius: 20,
+                padding: 24,
+                boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
               }}
             >
-              Buy
-            </button>
+              <h2 style={{ marginTop: 0 }}>Login</h2>
 
-            <button
-              onClick={() => handleAction("SELL")}
-              style={{
-                padding: "12px 20px",
-                border: "none",
-                borderRadius: 10,
-                background: "#2563eb",
-                color: "#ffffff",
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              Sell
-            </button>
-
-            <button
-              onClick={resetForm}
-              style={{
-                padding: "12px 20px",
-                border: "none",
-                borderRadius: 10,
-                background: "#dc2626",
-                color: "#ffffff",
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              Delete
-            </button>
-          </div>
-
-          <div
-            style={{
-              background: "#f9fafb",
-              border: "1px solid #e5e7eb",
-              borderRadius: 14,
-              padding: 20,
-              marginBottom: 28,
-            }}
-          >
-            <h2 style={{ marginTop: 0, fontSize: 22, color: "#111827" }}>
-              Summary
-            </h2>
-            <p><strong>Selected Action:</strong> {action || "None"}</p>
-            <p><strong>Pair:</strong> {fromCurrency} → {toCurrency}</p>
-            <p><strong>Amount:</strong> {amount || 0} {fromCurrency}</p>
-            <p><strong>Buy Rate:</strong> {buyRate}</p>
-            <p><strong>Sell Rate:</strong> {sellRate}</p>
-            <p><strong>Active Rate:</strong> {action ? activeRate : 0}</p>
-            <p><strong>Total:</strong> {toCurrency} {total.toLocaleString()}</p>
-          </div>
-
-          <div>
-            <h2 style={{ fontSize: 22, color: "#111827" }}>Transaction History</h2>
-
-            {history.length === 0 ? (
-              <div
-                style={{
-                  background: "#f9fafb",
-                  border: "1px dashed #d1d5db",
-                  borderRadius: 12,
-                  padding: 18,
-                  color: "#6b7280",
-                }}
-              >
-                No transactions yet.
-              </div>
-            ) : (
               <div style={{ display: "grid", gap: 12 }}>
-                {history.map((item, index) => (
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: 14,
+                    borderRadius: 10,
+                    border: "1px solid #d1d5db",
+                    fontSize: 16,
+                    boxSizing: "border-box",
+                  }}
+                />
+
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: 14,
+                    borderRadius: 10,
+                    border: "1px solid #d1d5db",
+                    fontSize: 16,
+                    boxSizing: "border-box",
+                  }}
+                />
+
+                <button
+                  onClick={handleLogin}
+                  style={{
+                    padding: "12px 20px",
+                    border: "none",
+                    borderRadius: 10,
+                    background: "#111827",
+                    color: "#ffffff",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Login
+                </button>
+
+                {loginMessage && (
+                  <p style={{ margin: 0, color: "#374151" }}>{loginMessage}</p>
+                )}
+              </div>
+            </div>
+
+            <div
+              style={{
+                background: "#ffffff",
+                borderRadius: 20,
+                padding: 24,
+                boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+              }}
+            >
+              <h2 style={{ marginTop: 0 }}>Marketplace</h2>
+
+              <div style={{ display: "grid", gap: 12 }}>
+                {marketplace.map((item, index) => (
                   <div
                     key={index}
                     style={{
                       border: "1px solid #e5e7eb",
                       borderRadius: 12,
-                      padding: 16,
-                      background: "#ffffff",
+                      padding: 14,
+                      background: "#f9fafb",
                     }}
                   >
-                    <p style={{ margin: "0 0 8px", fontWeight: 700 }}>
-                      {item.type === "BUY" ? "🟢 BUY" : "🔵 SELL"}
-                    </p>
-                    <p style={{ margin: "4px 0" }}>
-                      <strong>Pair:</strong> {item.fromCurrency} → {item.toCurrency}
-                    </p>
-                    <p style={{ margin: "4px 0" }}>
-                      <strong>Amount:</strong> {item.amount} {item.fromCurrency}
-                    </p>
-                    <p style={{ margin: "4px 0" }}>
-                      <strong>Rate:</strong> {item.rate}
-                    </p>
-                    <p style={{ margin: "4px 0" }}>
-                      <strong>Total:</strong> {item.toCurrency} {item.total.toLocaleString()}
-                    </p>
-                    <p style={{ margin: "4px 0", color: "#6b7280" }}>
-                      <strong>Time:</strong> {item.time}
-                    </p>
+                    <p style={{ margin: "0 0 6px", fontWeight: 700 }}>{item.seller}</p>
+                    <p style={{ margin: "4px 0" }}><strong>Pair:</strong> {item.pair}</p>
+                    <p style={{ margin: "4px 0" }}><strong>Rate:</strong> {item.rate}</p>
+                    <p style={{ margin: "4px 0" }}><strong>Amount:</strong> {item.amount}</p>
+                    <button
+                      style={{
+                        marginTop: 8,
+                        padding: "10px 14px",
+                        border: "none",
+                        borderRadius: 10,
+                        background: "#7c3aed",
+                        color: "#ffffff",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      View Offer
+                    </button>
                   </div>
                 ))}
               </div>
-            )}
+            </div>
           </div>
+        </div>
+
+        <div
+          style={{
+            background: "#ffffff",
+            borderRadius: 20,
+            padding: 24,
+            boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+          }}
+        >
+          <h2 style={{ marginTop: 0 }}>Transaction History</h2>
+
+          {history.length === 0 ? (
+            <div
+              style={{
+                background: "#f9fafb",
+                border: "1px dashed #d1d5db",
+                borderRadius: 12,
+                padding: 18,
+                color: "#6b7280",
+              }}
+            >
+              No transactions yet.
+            </div>
+          ) : (
+            <div style={{ display: "grid", gap: 12 }}>
+              {history.map((item, index) => (
+                <div
+                  key={index}
+                  style={{
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 12,
+                    padding: 16,
+                    background: "#ffffff",
+                  }}
+                >
+                  <p style={{ margin: "0 0 8px", fontWeight: 700 }}>
+                    {item.type === "BUY" ? "🟢 BUY" : "🔵 SELL"}
+                  </p>
+                  <p style={{ margin: "4px 0" }}>
+                    <strong>Pair:</strong> {item.fromCurrency} → {item.toCurrency}
+                  </p>
+                  <p style={{ margin: "4px 0" }}>
+                    <strong>Amount:</strong> {item.amount} {item.fromCurrency}
+                  </p>
+                  <p style={{ margin: "4px 0" }}>
+                    <strong>Rate:</strong> {item.rate}
+                  </p>
+                  <p style={{ margin: "4px 0" }}>
+                    <strong>Total:</strong> {item.toCurrency} {item.total.toLocaleString()}
+                  </p>
+                  <p style={{ margin: "4px 0", color: "#6b7280" }}>
+                    <strong>Time:</strong> {item.time}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </main>
   );
+}
 }
