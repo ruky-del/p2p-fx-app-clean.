@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 type Offer = {
   seller: string;
   pair: string;
   rate: string;
   amount: string;
+  total: number;
 };
 
 export default function Home() {
@@ -15,14 +16,7 @@ export default function Home() {
   const [toCurrency, setToCurrency] = useState("TZS");
   const [rate, setRate] = useState("");
   const [amount, setAmount] = useState("");
-  const [offers, setOffers] = useState<Offer[]>([
-    {
-      seller: "ASHA",
-      pair: "GBP → TZS",
-      rate: "3400",
-      amount: "£1000",
-    },
-  ]);
+  const [offers, setOffers] = useState<Offer[]>([]);
 
   const getCurrencySymbol = (currency: string) => {
     if (currency === "GBP") return "£";
@@ -32,16 +26,25 @@ export default function Home() {
     return "";
   };
 
+  const numericAmount = Number(amount) || 0;
+  const numericRate = Number(rate) || 0;
+
+  const total = useMemo(() => {
+    return numericAmount * numericRate;
+  }, [numericAmount, numericRate]);
+
   const handlePost = () => {
     if (!seller || !rate || !amount) return;
 
     const symbol = getCurrencySymbol(fromCurrency);
+    const targetSymbol = getCurrencySymbol(toCurrency);
 
     const newOffer: Offer = {
       seller: seller.toUpperCase(),
       pair: `${fromCurrency} → ${toCurrency}`,
-      rate,
+      rate: `${targetSymbol}${rate}`,
       amount: `${symbol}${amount}`,
+      total,
     };
 
     setOffers([newOffer, ...offers]);
@@ -85,7 +88,6 @@ export default function Home() {
               borderRadius: 10,
               border: "1px solid #d1d5db",
               fontSize: 16,
-              boxSizing: "border-box",
             }}
           />
 
@@ -97,7 +99,6 @@ export default function Home() {
                 padding: 14,
                 borderRadius: 10,
                 border: "1px solid #d1d5db",
-                fontSize: 16,
               }}
             >
               <option>USD</option>
@@ -113,7 +114,6 @@ export default function Home() {
                 padding: 14,
                 borderRadius: 10,
                 border: "1px solid #d1d5db",
-                fontSize: 16,
               }}
             >
               <option>TZS</option>
@@ -124,32 +124,42 @@ export default function Home() {
           </div>
 
           <input
-            placeholder="Rate"
+            placeholder={`Rate (${getCurrencySymbol(toCurrency).trim()})`}
             value={rate}
             onChange={(e) => setRate(e.target.value)}
             style={{
-              width: "100%",
               padding: 14,
               borderRadius: 10,
               border: "1px solid #d1d5db",
-              fontSize: 16,
-              boxSizing: "border-box",
             }}
           />
 
           <input
-            placeholder={`Amount (${getCurrencySymbol(fromCurrency).trim() || fromCurrency})`}
+            placeholder={`Amount (${getCurrencySymbol(fromCurrency).trim()})`}
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             style={{
-              width: "100%",
               padding: 14,
               borderRadius: 10,
               border: "1px solid #d1d5db",
-              fontSize: 16,
-              boxSizing: "border-box",
             }}
           />
+
+          <div
+            style={{
+              background: "#f9fafb",
+              padding: 14,
+              borderRadius: 10,
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            <strong>Preview:</strong>
+            <p style={{ margin: "6px 0" }}>
+              {getCurrencySymbol(fromCurrency)}
+              {amount || 0} → {getCurrencySymbol(toCurrency)}
+              {total.toLocaleString()}
+            </p>
+          </div>
 
           <button
             onClick={handlePost}
@@ -158,10 +168,9 @@ export default function Home() {
               border: "none",
               borderRadius: 10,
               background: "#2563eb",
-              color: "#ffffff",
+              color: "#fff",
               fontWeight: 700,
               cursor: "pointer",
-              width: "fit-content",
             }}
           >
             Post Offer
@@ -181,12 +190,17 @@ export default function Home() {
                 background: "#f9fafb",
               }}
             >
-              <p style={{ margin: "0 0 8px", fontWeight: 700, fontSize: 22 }}>
+              <p style={{ fontWeight: 700, fontSize: 20 }}>
                 {offer.seller}
               </p>
-              <p style={{ margin: "6px 0" }}>{offer.pair}</p>
-              <p style={{ margin: "6px 0" }}>Rate: {offer.rate}</p>
-              <p style={{ margin: "6px 0" }}>Amount: {offer.amount}</p>
+              <p>{offer.pair}</p>
+              <p>Rate: {offer.rate}</p>
+              <p>Amount: {offer.amount}</p>
+              <p>
+                <strong>Total:</strong>{" "}
+                {getCurrencySymbol(toCurrency)}
+                {offer.total.toLocaleString()}
+              </p>
             </div>
           ))}
         </div>
