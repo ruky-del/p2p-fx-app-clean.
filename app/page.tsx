@@ -15,16 +15,33 @@ export default function Home() {
   const [toCurrency, setToCurrency] = useState("TZS");
   const [rate, setRate] = useState("");
   const [amount, setAmount] = useState("");
-  const [offers, setOffers] = useState<Offer[]>([]);
+  const [offers, setOffers] = useState<Offer[]>([
+    {
+      seller: "ASHA",
+      pair: "GBP → TZS",
+      rate: "3400",
+      amount: "£1000",
+    },
+  ]);
+
+  const getCurrencySymbol = (currency: string) => {
+    if (currency === "GBP") return "£";
+    if (currency === "USD") return "$";
+    if (currency === "EUR") return "€";
+    if (currency === "TZS") return "TZS ";
+    return "";
+  };
 
   const handlePost = () => {
     if (!seller || !rate || !amount) return;
 
+    const symbol = getCurrencySymbol(fromCurrency);
+
     const newOffer: Offer = {
-      seller,
+      seller: seller.toUpperCase(),
       pair: `${fromCurrency} → ${toCurrency}`,
       rate,
-      amount,
+      amount: `${symbol}${amount}`,
     };
 
     setOffers([newOffer, ...offers]);
@@ -35,59 +52,145 @@ export default function Home() {
   };
 
   return (
-    <main style={{ padding: 40, fontFamily: "Arial" }}>
-      <h1>P2P FX Marketplace</h1>
+    <main
+      style={{
+        minHeight: "100vh",
+        background: "#f5f7fb",
+        padding: "40px 20px",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 760,
+          margin: "0 auto",
+          background: "#ffffff",
+          borderRadius: 18,
+          padding: 24,
+          boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+        }}
+      >
+        <h1 style={{ marginTop: 0, fontSize: 36 }}>P2P FX Marketplace</h1>
 
-      <h2>Post Offer</h2>
+        <h2>Post Offer</h2>
 
-      <input
-        placeholder="Your name"
-        value={seller}
-        onChange={(e) => setSeller(e.target.value)}
-      />
-      <br /><br />
+        <div style={{ display: "grid", gap: 14, marginBottom: 24 }}>
+          <input
+            placeholder="Your name"
+            value={seller}
+            onChange={(e) => setSeller(e.target.value)}
+            style={{
+              width: "100%",
+              padding: 14,
+              borderRadius: 10,
+              border: "1px solid #d1d5db",
+              fontSize: 16,
+              boxSizing: "border-box",
+            }}
+          />
 
-      <select value={fromCurrency} onChange={(e) => setFromCurrency(e.target.value)}>
-        <option>USD</option>
-        <option>GBP</option>
-        <option>EUR</option>
-      </select>
+          <div style={{ display: "flex", gap: 12 }}>
+            <select
+              value={fromCurrency}
+              onChange={(e) => setFromCurrency(e.target.value)}
+              style={{
+                padding: 14,
+                borderRadius: 10,
+                border: "1px solid #d1d5db",
+                fontSize: 16,
+              }}
+            >
+              <option>USD</option>
+              <option>GBP</option>
+              <option>EUR</option>
+              <option>TZS</option>
+            </select>
 
-      <select value={toCurrency} onChange={(e) => setToCurrency(e.target.value)}>
-        <option>TZS</option>
-        <option>USD</option>
-      </select>
+            <select
+              value={toCurrency}
+              onChange={(e) => setToCurrency(e.target.value)}
+              style={{
+                padding: 14,
+                borderRadius: 10,
+                border: "1px solid #d1d5db",
+                fontSize: 16,
+              }}
+            >
+              <option>TZS</option>
+              <option>USD</option>
+              <option>GBP</option>
+              <option>EUR</option>
+            </select>
+          </div>
 
-      <br /><br />
+          <input
+            placeholder="Rate"
+            value={rate}
+            onChange={(e) => setRate(e.target.value)}
+            style={{
+              width: "100%",
+              padding: 14,
+              borderRadius: 10,
+              border: "1px solid #d1d5db",
+              fontSize: 16,
+              boxSizing: "border-box",
+            }}
+          />
 
-      <input
-        placeholder="Rate"
-        value={rate}
-        onChange={(e) => setRate(e.target.value)}
-      />
-      <br /><br />
+          <input
+            placeholder={`Amount (${getCurrencySymbol(fromCurrency).trim() || fromCurrency})`}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            style={{
+              width: "100%",
+              padding: 14,
+              borderRadius: 10,
+              border: "1px solid #d1d5db",
+              fontSize: 16,
+              boxSizing: "border-box",
+            }}
+          />
 
-      <input
-        placeholder="Amount"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-      />
-      <br /><br />
-
-      <button onClick={handlePost}>Post Offer</button>
-
-      <h2>Marketplace</h2>
-
-      {offers.length === 0 && <p>No offers yet</p>}
-
-      {offers.map((offer, i) => (
-        <div key={i} style={{ border: "1px solid #ccc", padding: 10, marginTop: 10 }}>
-          <strong>{offer.seller}</strong>
-          <p>{offer.pair}</p>
-          <p>Rate: {offer.rate}</p>
-          <p>Amount: {offer.amount}</p>
+          <button
+            onClick={handlePost}
+            style={{
+              padding: "12px 20px",
+              border: "none",
+              borderRadius: 10,
+              background: "#2563eb",
+              color: "#ffffff",
+              fontWeight: 700,
+              cursor: "pointer",
+              width: "fit-content",
+            }}
+          >
+            Post Offer
+          </button>
         </div>
-      ))}
+
+        <h2>Marketplace</h2>
+
+        <div style={{ display: "grid", gap: 14 }}>
+          {offers.map((offer, i) => (
+            <div
+              key={i}
+              style={{
+                border: "1px solid #e5e7eb",
+                borderRadius: 14,
+                padding: 18,
+                background: "#f9fafb",
+              }}
+            >
+              <p style={{ margin: "0 0 8px", fontWeight: 700, fontSize: 22 }}>
+                {offer.seller}
+              </p>
+              <p style={{ margin: "6px 0" }}>{offer.pair}</p>
+              <p style={{ margin: "6px 0" }}>Rate: {offer.rate}</p>
+              <p style={{ margin: "6px 0" }}>Amount: {offer.amount}</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </main>
   );
 }
