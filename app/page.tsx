@@ -8,10 +8,12 @@ type Offer = {
   rate: string;
   amount: string;
   total: number;
+  phone: string;
 };
 
 export default function Home() {
   const [seller, setSeller] = useState("");
+  const [phone, setPhone] = useState("");
   const [fromCurrency, setFromCurrency] = useState("USD");
   const [toCurrency, setToCurrency] = useState("TZS");
   const [rate, setRate] = useState("");
@@ -35,7 +37,7 @@ export default function Home() {
   }, [numericAmount, numericRate]);
 
   const handlePost = () => {
-    if (!seller || !rate || !amount) return;
+    if (!seller || !rate || !amount || !phone) return;
 
     const symbol = getCurrencySymbol(fromCurrency);
     const targetSymbol = getCurrencySymbol(toCurrency);
@@ -46,6 +48,7 @@ export default function Home() {
       rate: `${targetSymbol}${rate}`,
       amount: `${symbol}${amount}`,
       total,
+      phone,
     };
 
     setOffers([newOffer, ...offers]);
@@ -53,6 +56,13 @@ export default function Home() {
     setSeller("");
     setRate("");
     setAmount("");
+    setPhone("");
+  };
+
+  const openWhatsApp = (offer: Offer) => {
+    const message = `Hi ${offer.seller}, I'm interested in your offer (${offer.pair}) at rate ${offer.rate}`;
+    const url = `https://wa.me/${offer.phone}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank");
   };
 
   return (
@@ -68,6 +78,13 @@ export default function Home() {
             placeholder="Your name"
             value={seller}
             onChange={(e) => setSeller(e.target.value)}
+          />
+          <br /><br />
+
+          <input
+            placeholder="Phone (e.g. 2557XXXXXXXX)"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
           />
           <br /><br />
 
@@ -141,9 +158,23 @@ export default function Home() {
             <p><strong>Rate:</strong> {selectedOffer.rate}</p>
             <p><strong>Amount:</strong> {selectedOffer.amount}</p>
 
-            <p style={{ color: "green", fontWeight: 700 }}>
-              📞 WhatsApp: +255 XXX XXX XXX
-            </p>
+            <button
+              onClick={() => openWhatsApp(selectedOffer)}
+              style={{
+                marginTop: 10,
+                padding: "10px 16px",
+                border: "none",
+                borderRadius: 8,
+                background: "green",
+                color: "#fff",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Chat on WhatsApp 📲
+            </button>
+
+            <br /><br />
 
             <button onClick={() => setSelectedOffer(null)}>
               Close
