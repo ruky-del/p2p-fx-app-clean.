@@ -47,13 +47,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gap: 16,
-            marginBottom: 20,
-          }}
-        >
+        <div style={{ display: "grid", gap: 16, marginBottom: 20 }}>
           <div>
             <label
               style={{
