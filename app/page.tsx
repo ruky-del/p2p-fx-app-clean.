@@ -7,6 +7,8 @@ type ActionType = "BUY" | "SELL" | "";
 type HistoryItem = {
   type: "BUY" | "SELL";
   amount: string;
+  fromCurrency: string;
+  toCurrency: string;
   rate: string;
   total: number;
   time: string;
@@ -16,6 +18,8 @@ export default function Home() {
   const [amount, setAmount] = useState("");
   const [buyRate, setBuyRate] = useState("2500");
   const [sellRate, setSellRate] = useState("2450");
+  const [fromCurrency, setFromCurrency] = useState("USD");
+  const [toCurrency, setToCurrency] = useState("TZS");
   const [action, setAction] = useState<ActionType>("");
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
@@ -35,11 +39,14 @@ export default function Home() {
     if (!amount) return;
 
     const selectedRate = type === "BUY" ? buyRate : sellRate;
-    const calculatedTotal = (Number(amount) || 0) * (Number(selectedRate) || 0);
+    const calculatedTotal =
+      (Number(amount) || 0) * (Number(selectedRate) || 0);
 
     const newItem: HistoryItem = {
       type,
       amount,
+      fromCurrency,
+      toCurrency,
       rate: selectedRate,
       total: calculatedTotal,
       time: new Date().toLocaleTimeString(),
@@ -52,7 +59,15 @@ export default function Home() {
     setAmount("");
     setBuyRate("2500");
     setSellRate("2450");
+    setFromCurrency("USD");
+    setToCurrency("TZS");
     setAction("");
+  };
+
+  const swapCurrencies = () => {
+    const oldFrom = fromCurrency;
+    setFromCurrency(toCurrency);
+    setToCurrency(oldFrom);
   };
 
   return (
@@ -121,6 +136,90 @@ export default function Home() {
                   boxSizing: "border-box",
                 }}
               />
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr auto 1fr",
+                gap: 12,
+                alignItems: "end",
+              }}
+            >
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: 8,
+                    fontWeight: 700,
+                    color: "#111827",
+                  }}
+                >
+                  From Currency
+                </label>
+                <select
+                  value={fromCurrency}
+                  onChange={(e) => setFromCurrency(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: 14,
+                    borderRadius: 10,
+                    border: "1px solid #d1d5db",
+                    fontSize: 16,
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <option value="USD">USD</option>
+                  <option value="GBP">GBP</option>
+                  <option value="EUR">EUR</option>
+                  <option value="TZS">TZS</option>
+                </select>
+              </div>
+
+              <button
+                onClick={swapCurrencies}
+                style={{
+                  padding: "12px 16px",
+                  border: "none",
+                  borderRadius: 10,
+                  background: "#e5e7eb",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  height: 48,
+                }}
+              >
+                ⇄
+              </button>
+
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: 8,
+                    fontWeight: 700,
+                    color: "#111827",
+                  }}
+                >
+                  To Currency
+                </label>
+                <select
+                  value={toCurrency}
+                  onChange={(e) => setToCurrency(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: 14,
+                    borderRadius: 10,
+                    border: "1px solid #d1d5db",
+                    fontSize: 16,
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <option value="TZS">TZS</option>
+                  <option value="USD">USD</option>
+                  <option value="GBP">GBP</option>
+                  <option value="EUR">EUR</option>
+                </select>
+              </div>
             </div>
 
             <div>
@@ -243,11 +342,12 @@ export default function Home() {
               Summary
             </h2>
             <p><strong>Selected Action:</strong> {action || "None"}</p>
-            <p><strong>Amount:</strong> {amount || 0}</p>
+            <p><strong>Pair:</strong> {fromCurrency} → {toCurrency}</p>
+            <p><strong>Amount:</strong> {amount || 0} {fromCurrency}</p>
             <p><strong>Buy Rate:</strong> {buyRate}</p>
             <p><strong>Sell Rate:</strong> {sellRate}</p>
             <p><strong>Active Rate:</strong> {action ? activeRate : 0}</p>
-            <p><strong>Total:</strong> TZS {total.toLocaleString()}</p>
+            <p><strong>Total:</strong> {toCurrency} {total.toLocaleString()}</p>
           </div>
 
           <div>
@@ -281,13 +381,16 @@ export default function Home() {
                       {item.type === "BUY" ? "🟢 BUY" : "🔵 SELL"}
                     </p>
                     <p style={{ margin: "4px 0" }}>
-                      <strong>Amount:</strong> {item.amount}
+                      <strong>Pair:</strong> {item.fromCurrency} → {item.toCurrency}
+                    </p>
+                    <p style={{ margin: "4px 0" }}>
+                      <strong>Amount:</strong> {item.amount} {item.fromCurrency}
                     </p>
                     <p style={{ margin: "4px 0" }}>
                       <strong>Rate:</strong> {item.rate}
                     </p>
                     <p style={{ margin: "4px 0" }}>
-                      <strong>Total:</strong> TZS {item.total.toLocaleString()}
+                      <strong>Total:</strong> {item.toCurrency} {item.total.toLocaleString()}
                     </p>
                     <p style={{ margin: "4px 0", color: "#6b7280" }}>
                       <strong>Time:</strong> {item.time}
