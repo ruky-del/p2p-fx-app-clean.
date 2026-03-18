@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Offer = {
   seller: string;
@@ -20,6 +20,19 @@ export default function Home() {
   const [amount, setAmount] = useState("");
   const [offers, setOffers] = useState<Offer[]>([]);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
+
+  // LOAD FROM STORAGE
+  useEffect(() => {
+    const saved = localStorage.getItem("offers");
+    if (saved) {
+      setOffers(JSON.parse(saved));
+    }
+  }, []);
+
+  // SAVE TO STORAGE
+  useEffect(() => {
+    localStorage.setItem("offers", JSON.stringify(offers));
+  }, [offers]);
 
   const getCurrencySymbol = (currency: string) => {
     if (currency === "GBP") return "£";
@@ -70,7 +83,6 @@ export default function Home() {
       <div style={{ maxWidth: 800, margin: "0 auto" }}>
         <h1>P2P FX Marketplace</h1>
 
-        {/* POST OFFER */}
         <div style={{ marginBottom: 30 }}>
           <h2>Post Offer</h2>
 
@@ -82,7 +94,7 @@ export default function Home() {
           <br /><br />
 
           <input
-            placeholder="Phone (e.g. 2557XXXXXXXX)"
+            placeholder="Phone (2557XXXXXXXX)"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
           />
@@ -124,7 +136,6 @@ export default function Home() {
           <button onClick={handlePost}>Post Offer</button>
         </div>
 
-        {/* MARKETPLACE */}
         <h2>Marketplace</h2>
 
         {offers.map((offer, i) => (
@@ -140,45 +151,19 @@ export default function Home() {
           </div>
         ))}
 
-        {/* CONTACT MODAL */}
         {selectedOffer && (
-          <div
-            style={{
-              marginTop: 30,
-              padding: 20,
-              border: "2px solid #2563eb",
-              borderRadius: 10,
-              background: "#ffffff",
-            }}
-          >
+          <div style={{ marginTop: 30, padding: 20, border: "2px solid blue" }}>
             <h2>Contact Seller</h2>
 
-            <p><strong>Seller:</strong> {selectedOffer.seller}</p>
-            <p><strong>Pair:</strong> {selectedOffer.pair}</p>
-            <p><strong>Rate:</strong> {selectedOffer.rate}</p>
-            <p><strong>Amount:</strong> {selectedOffer.amount}</p>
+            <p>{selectedOffer.seller}</p>
+            <p>{selectedOffer.pair}</p>
 
-            <button
-              onClick={() => openWhatsApp(selectedOffer)}
-              style={{
-                marginTop: 10,
-                padding: "10px 16px",
-                border: "none",
-                borderRadius: 8,
-                background: "green",
-                color: "#fff",
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              Chat on WhatsApp 📲
+            <button onClick={() => openWhatsApp(selectedOffer)}>
+              WhatsApp Seller 📲
             </button>
 
             <br /><br />
-
-            <button onClick={() => setSelectedOffer(null)}>
-              Close
-            </button>
+            <button onClick={() => setSelectedOffer(null)}>Close</button>
           </div>
         )}
       </div>
