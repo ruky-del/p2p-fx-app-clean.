@@ -17,6 +17,7 @@ export default function Home() {
   const [rate, setRate] = useState("");
   const [amount, setAmount] = useState("");
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
 
   const getCurrencySymbol = (currency: string) => {
     if (currency === "GBP") return "£";
@@ -55,155 +56,100 @@ export default function Home() {
   };
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "#f5f7fb",
-        padding: "40px 20px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 760,
-          margin: "0 auto",
-          background: "#ffffff",
-          borderRadius: 18,
-          padding: 24,
-          boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-        }}
-      >
-        <h1 style={{ marginTop: 0, fontSize: 36 }}>P2P FX Marketplace</h1>
+    <main style={{ padding: 40, fontFamily: "Arial", background: "#f5f7fb" }}>
+      <div style={{ maxWidth: 800, margin: "0 auto" }}>
+        <h1>P2P FX Marketplace</h1>
 
-        <h2>Post Offer</h2>
+        {/* POST OFFER */}
+        <div style={{ marginBottom: 30 }}>
+          <h2>Post Offer</h2>
 
-        <div style={{ display: "grid", gap: 14, marginBottom: 24 }}>
           <input
             placeholder="Your name"
             value={seller}
             onChange={(e) => setSeller(e.target.value)}
-            style={{
-              width: "100%",
-              padding: 14,
-              borderRadius: 10,
-              border: "1px solid #d1d5db",
-              fontSize: 16,
-            }}
           />
+          <br /><br />
 
-          <div style={{ display: "flex", gap: 12 }}>
-            <select
-              value={fromCurrency}
-              onChange={(e) => setFromCurrency(e.target.value)}
-              style={{
-                padding: 14,
-                borderRadius: 10,
-                border: "1px solid #d1d5db",
-              }}
-            >
-              <option>USD</option>
-              <option>GBP</option>
-              <option>EUR</option>
-              <option>TZS</option>
-            </select>
+          <select value={fromCurrency} onChange={(e) => setFromCurrency(e.target.value)}>
+            <option>USD</option>
+            <option>GBP</option>
+            <option>EUR</option>
+          </select>
 
-            <select
-              value={toCurrency}
-              onChange={(e) => setToCurrency(e.target.value)}
-              style={{
-                padding: 14,
-                borderRadius: 10,
-                border: "1px solid #d1d5db",
-              }}
-            >
-              <option>TZS</option>
-              <option>USD</option>
-              <option>GBP</option>
-              <option>EUR</option>
-            </select>
-          </div>
+          <select value={toCurrency} onChange={(e) => setToCurrency(e.target.value)}>
+            <option>TZS</option>
+            <option>USD</option>
+          </select>
+
+          <br /><br />
 
           <input
-            placeholder={`Rate (${getCurrencySymbol(toCurrency).trim()})`}
+            placeholder="Rate"
             value={rate}
             onChange={(e) => setRate(e.target.value)}
-            style={{
-              padding: 14,
-              borderRadius: 10,
-              border: "1px solid #d1d5db",
-            }}
           />
+          <br /><br />
 
           <input
-            placeholder={`Amount (${getCurrencySymbol(fromCurrency).trim()})`}
+            placeholder="Amount"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            style={{
-              padding: 14,
-              borderRadius: 10,
-              border: "1px solid #d1d5db",
-            }}
           />
+          <br /><br />
 
-          <div
-            style={{
-              background: "#f9fafb",
-              padding: 14,
-              borderRadius: 10,
-              border: "1px solid #e5e7eb",
-            }}
-          >
-            <strong>Preview:</strong>
-            <p style={{ margin: "6px 0" }}>
-              {getCurrencySymbol(fromCurrency)}
-              {amount || 0} → {getCurrencySymbol(toCurrency)}
-              {total.toLocaleString()}
-            </p>
-          </div>
+          <p>
+            Preview: {getCurrencySymbol(fromCurrency)}{amount || 0} →{" "}
+            {getCurrencySymbol(toCurrency)}
+            {total.toLocaleString()}
+          </p>
 
-          <button
-            onClick={handlePost}
-            style={{
-              padding: "12px 20px",
-              border: "none",
-              borderRadius: 10,
-              background: "#2563eb",
-              color: "#fff",
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
-          >
-            Post Offer
-          </button>
+          <button onClick={handlePost}>Post Offer</button>
         </div>
 
+        {/* MARKETPLACE */}
         <h2>Marketplace</h2>
 
-        <div style={{ display: "grid", gap: 14 }}>
-          {offers.map((offer, i) => (
-            <div
-              key={i}
-              style={{
-                border: "1px solid #e5e7eb",
-                borderRadius: 14,
-                padding: 18,
-                background: "#f9fafb",
-              }}
-            >
-              <p style={{ fontWeight: 700, fontSize: 20 }}>
-                {offer.seller}
-              </p>
-              <p>{offer.pair}</p>
-              <p>Rate: {offer.rate}</p>
-              <p>Amount: {offer.amount}</p>
-              <p>
-                <strong>Total:</strong>{" "}
-                {getCurrencySymbol(toCurrency)}
-                {offer.total.toLocaleString()}
-              </p>
-            </div>
-          ))}
-        </div>
+        {offers.map((offer, i) => (
+          <div key={i} style={{ border: "1px solid #ccc", padding: 10, marginTop: 10 }}>
+            <strong>{offer.seller}</strong>
+            <p>{offer.pair}</p>
+            <p>Rate: {offer.rate}</p>
+            <p>Amount: {offer.amount}</p>
+
+            <button onClick={() => setSelectedOffer(offer)}>
+              Contact Seller
+            </button>
+          </div>
+        ))}
+
+        {/* CONTACT MODAL */}
+        {selectedOffer && (
+          <div
+            style={{
+              marginTop: 30,
+              padding: 20,
+              border: "2px solid #2563eb",
+              borderRadius: 10,
+              background: "#ffffff",
+            }}
+          >
+            <h2>Contact Seller</h2>
+
+            <p><strong>Seller:</strong> {selectedOffer.seller}</p>
+            <p><strong>Pair:</strong> {selectedOffer.pair}</p>
+            <p><strong>Rate:</strong> {selectedOffer.rate}</p>
+            <p><strong>Amount:</strong> {selectedOffer.amount}</p>
+
+            <p style={{ color: "green", fontWeight: 700 }}>
+              📞 WhatsApp: +255 XXX XXX XXX
+            </p>
+
+            <button onClick={() => setSelectedOffer(null)}>
+              Close
+            </button>
+          </div>
+        )}
       </div>
     </main>
   );
