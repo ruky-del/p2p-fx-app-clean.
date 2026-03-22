@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import { supabase } from "../lib/supabase";
 
 type Offer = {
@@ -55,9 +56,35 @@ export default function Home() {
     };
   }, []);
 
+  const showSuccess = (message: string) => {
+    toast.success(message, {
+      duration: 3000,
+      style: {
+        background: "#16a34a",
+        color: "#fff",
+        padding: "12px 16px",
+        borderRadius: "12px",
+        fontWeight: "700",
+      },
+    });
+  };
+
+  const showError = (message: string) => {
+    toast.error(message, {
+      duration: 3500,
+      style: {
+        background: "#dc2626",
+        color: "#fff",
+        padding: "12px 16px",
+        borderRadius: "12px",
+        fontWeight: "700",
+      },
+    });
+  };
+
   const handleAuth = async () => {
     if (!email || !password) {
-      alert("Enter email and password");
+      showError("Enter email and password");
       return;
     }
 
@@ -70,9 +97,9 @@ export default function Home() {
       });
 
       if (error) {
-        alert(error.message);
+        showError(error.message);
       } else {
-        alert("Account created. You can now log in.");
+        showSuccess("Account created. You can now log in 🎉");
         setAuthMode("login");
       }
     } else {
@@ -82,7 +109,9 @@ export default function Home() {
       });
 
       if (error) {
-        alert("Invalid login credentials");
+        showError("Invalid login credentials");
+      } else {
+        showSuccess("Login successful ✅");
       }
     }
 
@@ -91,6 +120,7 @@ export default function Home() {
 
   const logout = async () => {
     await supabase.auth.signOut();
+    showSuccess("Logged out");
   };
 
   const fetchOffers = async () => {
@@ -115,12 +145,12 @@ export default function Home() {
 
   const handlePost = async () => {
     if (!session) {
-      alert("Login first");
+      showError("Login first");
       return;
     }
 
     if (!name || !phone || !rate || !amount) {
-      alert("Please fill all fields");
+      showError("Please fill all fields");
       return;
     }
 
@@ -141,16 +171,17 @@ export default function Home() {
 
     if (error) {
       console.error("Insert error:", error);
-      alert("Failed to save offer");
-    } else {
-      alert("Offer saved successfully");
-      setName("");
-      setPhone("");
-      setRate("");
-      setAmount("");
-      fetchOffers();
+      showError("Failed to save offer");
+      setPosting(false);
+      return;
     }
 
+    showSuccess("Offer posted successfully 🎉");
+    setName("");
+    setPhone("");
+    setRate("");
+    setAmount("");
+    fetchOffers();
     setPosting(false);
   };
 
@@ -166,8 +197,9 @@ export default function Home() {
 
     if (error) {
       console.error("Delete error:", error);
-      alert("Failed to delete offer");
+      showError("Failed to delete offer");
     } else {
+      showSuccess("Offer deleted");
       fetchOffers();
     }
 
@@ -176,12 +208,14 @@ export default function Home() {
 
   const filteredOffers = useMemo(() => {
     return offers.filter((offer) => {
+      const q = search.toLowerCase().trim();
+
       const matchesSearch =
-        search.trim() === "" ||
-        offer.name?.toLowerCase().includes(search.toLowerCase()) ||
-        offer.phone?.toLowerCase().includes(search.toLowerCase()) ||
-        offer.from_currency?.toLowerCase().includes(search.toLowerCase()) ||
-        offer.to_currency?.toLowerCase().includes(search.toLowerCase());
+        q === "" ||
+        offer.name?.toLowerCase().includes(q) ||
+        offer.phone?.toLowerCase().includes(q) ||
+        offer.from_currency?.toLowerCase().includes(q) ||
+        offer.to_currency?.toLowerCase().includes(q);
 
       const matchesFrom =
         filterFrom === "ALL" || offer.from_currency === filterFrom;
@@ -197,40 +231,54 @@ export default function Home() {
     return offers.filter((offer) => offer.user_id === session.user.id);
   }, [offers, session]);
 
+  const formatNumber = (value: number) => {
+    return Number(value || 0).toLocaleString();
+  };
+
+  const getCurrencySymbol = (currency: string) => {
+    if (currency === "USD") return "$";
+    if (currency === "GBP") return "£";
+    if (currency === "EUR") return "€";
+    if (currency === "TZS") return "TZS ";
+    return "";
+  };
+
   const inputStyle: React.CSSProperties = {
     width: "100%",
-    padding: 14,
-    borderRadius: 12,
-    border: "1px solid #d1d5db",
-    fontSize: 16,
+    padding: "14px 16px",
+    borderRadius: 14,
+    border: "1px solid #dbe2ea",
+    fontSize: 15,
     boxSizing: "border-box",
     background: "#ffffff",
     outline: "none",
+    color: "#0f172a",
   };
 
   const cardStyle: React.CSSProperties = {
     background: "#ffffff",
     border: "1px solid #e5e7eb",
-    borderRadius: 18,
-    padding: 20,
-    boxShadow: "0 6px 20px rgba(0,0,0,0.04)",
+    borderRadius: 20,
+    padding: 22,
+    boxShadow: "0 10px 30px rgba(15, 23, 42, 0.05)",
   };
 
   const primaryButton: React.CSSProperties = {
     padding: "12px 18px",
     border: "none",
-    borderRadius: 12,
-    background: "#2563eb",
+    borderRadius: 14,
+    background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
     color: "#ffffff",
     fontWeight: 700,
     cursor: "pointer",
+    boxShadow: "0 10px 20px rgba(37, 99, 235, 0.18)",
   };
 
   const secondaryButton: React.CSSProperties = {
     padding: "12px 18px",
     border: "none",
-    borderRadius: 12,
-    background: "#e5e7eb",
+    borderRadius: 14,
+    background: "#eef2f7",
     color: "#111827",
     fontWeight: 700,
     cursor: "pointer",
@@ -246,84 +294,98 @@ export default function Home() {
     cursor: "pointer",
   };
 
+  const smallLabel: React.CSSProperties = {
+    margin: 0,
+    fontSize: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
+    color: "#64748b",
+    fontWeight: 700,
+  };
+
   return (
     <main
       style={{
         minHeight: "100vh",
         background:
-          "linear-gradient(180deg, #eef4ff 0%, #f8fbff 45%, #f3f6fb 100%)",
-        padding: "32px 16px 60px",
-        fontFamily: "Arial, sans-serif",
+          "radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 30%, #f8fbff 55%, #f3f6fb 100%)",
+        padding: "28px 14px 60px",
+        fontFamily:
+          "Inter, Arial, Helvetica, ui-sans-serif, system-ui, sans-serif",
       }}
     >
-      <div style={{ maxWidth: 1050, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1180, margin: "0 auto" }}>
         <div
           style={{
-            background: "linear-gradient(135deg, #1d4ed8 0%, #111827 100%)",
+            background: "linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%)",
             color: "#ffffff",
-            borderRadius: 24,
+            borderRadius: 28,
             padding: 28,
-            boxShadow: "0 18px 40px rgba(37, 99, 235, 0.20)",
-            marginBottom: 24,
+            boxShadow: "0 20px 50px rgba(29, 78, 216, 0.22)",
+            marginBottom: 22,
           }}
         >
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
+              alignItems: "center",
               gap: 20,
               flexWrap: "wrap",
-              alignItems: "center",
             }}
           >
-            <div>
+            <div style={{ maxWidth: 720 }}>
               <p
                 style={{
                   margin: 0,
-                  fontSize: 13,
+                  fontSize: 12,
                   letterSpacing: 1,
                   textTransform: "uppercase",
-                  opacity: 0.8,
+                  opacity: 0.85,
+                  fontWeight: 700,
                 }}
               >
                 Live Marketplace
               </p>
+
               <h1
                 style={{
-                  margin: "8px 0 10px",
-                  fontSize: 38,
-                  lineHeight: 1.1,
+                  margin: "10px 0 12px",
+                  fontSize: 46,
+                  lineHeight: 1.02,
                 }}
               >
                 P2P FX Marketplace
               </h1>
+
               <p
                 style={{
                   margin: 0,
-                  maxWidth: 620,
-                  color: "rgba(255,255,255,0.85)",
-                  fontSize: 16,
+                  color: "rgba(255,255,255,0.86)",
+                  fontSize: 17,
+                  maxWidth: 680,
                 }}
               >
                 Buy and sell foreign currency with account login, clean search,
-                live offer posting, and instant seller contact.
+                professional offer cards, and instant seller contact.
               </p>
             </div>
 
             <div
               style={{
-                minWidth: 220,
+                minWidth: 240,
                 background: "rgba(255,255,255,0.10)",
-                border: "1px solid rgba(255,255,255,0.15)",
-                borderRadius: 18,
-                padding: 16,
+                border: "1px solid rgba(255,255,255,0.14)",
+                borderRadius: 22,
+                padding: 18,
+                backdropFilter: "blur(6px)",
               }}
             >
               <p style={{ margin: "0 0 8px", opacity: 0.8 }}>Status</p>
-              <p style={{ margin: 0, fontWeight: 700, fontSize: 18 }}>
+              <p style={{ margin: 0, fontWeight: 800, fontSize: 20 }}>
                 {session ? "Logged In ✅" : "Guest Mode"}
               </p>
-              <p style={{ margin: "8px 0 0", opacity: 0.8, fontSize: 14 }}>
+              <p style={{ margin: "8px 0 0", opacity: 0.82, fontSize: 14 }}>
                 {session ? session.user.email : "Sign in to post offers"}
               </p>
             </div>
@@ -333,7 +395,7 @@ export default function Home() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1.05fr 1.35fr",
+            gridTemplateColumns: "380px 1fr",
             gap: 20,
             alignItems: "start",
           }}
@@ -341,7 +403,7 @@ export default function Home() {
           <div style={{ display: "grid", gap: 20 }}>
             {!session && (
               <div style={cardStyle}>
-                <h2 style={{ marginTop: 0, marginBottom: 14 }}>
+                <h2 style={{ margin: "0 0 14px", fontSize: 30 }}>
                   Authentication
                 </h2>
 
@@ -393,7 +455,10 @@ export default function Home() {
                   <button
                     onClick={handleAuth}
                     disabled={authLoading}
-                    style={primaryButton}
+                    style={{
+                      ...primaryButton,
+                      opacity: authLoading ? 0.7 : 1,
+                    }}
                   >
                     {authLoading
                       ? "Loading..."
@@ -409,14 +474,36 @@ export default function Home() {
               <div
                 style={{
                   ...cardStyle,
-                  background: "#eff6ff",
+                  background: "linear-gradient(180deg, #eff6ff 0%, #ffffff 100%)",
                   border: "1px solid #bfdbfe",
                 }}
               >
-                <h2 style={{ marginTop: 0, marginBottom: 10 }}>Your Session</h2>
-                <p style={{ margin: "0 0 14px", color: "#1e3a8a" }}>
-                  Logged in as <strong>{session.user.email}</strong>
-                </p>
+                <h2 style={{ margin: "0 0 12px", fontSize: 30 }}>
+                  Your Session
+                </h2>
+
+                <div
+                  style={{
+                    padding: 14,
+                    background: "#ffffff",
+                    border: "1px solid #dbeafe",
+                    borderRadius: 16,
+                    marginBottom: 14,
+                  }}
+                >
+                  <p style={smallLabel}>Logged in as</p>
+                  <p
+                    style={{
+                      margin: "8px 0 0",
+                      color: "#1e3a8a",
+                      fontWeight: 700,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {session.user.email}
+                  </p>
+                </div>
+
                 <button
                   onClick={logout}
                   style={{
@@ -432,22 +519,28 @@ export default function Home() {
 
             {session && (
               <div style={cardStyle}>
-                <h2 style={{ marginTop: 0, marginBottom: 14 }}>Post Offer</h2>
+                <h2 style={{ margin: "0 0 14px", fontSize: 30 }}>Post Offer</h2>
 
                 <div style={{ display: "grid", gap: 12 }}>
-                  <input
-                    placeholder="Your name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    style={inputStyle}
-                  />
+                  <div>
+                    <p style={{ ...smallLabel, marginBottom: 8 }}>Seller name</p>
+                    <input
+                      placeholder="Your name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      style={inputStyle}
+                    />
+                  </div>
 
-                  <input
-                    placeholder="Phone"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    style={inputStyle}
-                  />
+                  <div>
+                    <p style={{ ...smallLabel, marginBottom: 8 }}>Phone number</p>
+                    <input
+                      placeholder="Phone"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      style={inputStyle}
+                    />
+                  </div>
 
                   <div
                     style={{
@@ -456,60 +549,83 @@ export default function Home() {
                       gap: 12,
                     }}
                   >
-                    <select
-                      value={fromCurrency}
-                      onChange={(e) => setFromCurrency(e.target.value)}
-                      style={inputStyle}
-                    >
-                      <option>USD</option>
-                      <option>GBP</option>
-                      <option>EUR</option>
-                      <option>TZS</option>
-                    </select>
+                    <div>
+                      <p style={{ ...smallLabel, marginBottom: 8 }}>From</p>
+                      <select
+                        value={fromCurrency}
+                        onChange={(e) => setFromCurrency(e.target.value)}
+                        style={inputStyle}
+                      >
+                        <option>USD</option>
+                        <option>GBP</option>
+                        <option>EUR</option>
+                        <option>TZS</option>
+                      </select>
+                    </div>
 
-                    <select
-                      value={toCurrency}
-                      onChange={(e) => setToCurrency(e.target.value)}
-                      style={inputStyle}
-                    >
-                      <option>TZS</option>
-                      <option>USD</option>
-                      <option>GBP</option>
-                      <option>EUR</option>
-                    </select>
+                    <div>
+                      <p style={{ ...smallLabel, marginBottom: 8 }}>To</p>
+                      <select
+                        value={toCurrency}
+                        onChange={(e) => setToCurrency(e.target.value)}
+                        style={inputStyle}
+                      >
+                        <option>TZS</option>
+                        <option>USD</option>
+                        <option>GBP</option>
+                        <option>EUR</option>
+                      </select>
+                    </div>
                   </div>
 
-                  <input
-                    placeholder="Rate"
-                    value={rate}
-                    onChange={(e) => setRate(e.target.value)}
-                    style={inputStyle}
-                  />
+                  <div>
+                    <p style={{ ...smallLabel, marginBottom: 8 }}>Rate</p>
+                    <input
+                      placeholder="Rate"
+                      value={rate}
+                      onChange={(e) => setRate(e.target.value)}
+                      style={inputStyle}
+                    />
+                  </div>
 
-                  <input
-                    placeholder="Amount"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    style={inputStyle}
-                  />
+                  <div>
+                    <p style={{ ...smallLabel, marginBottom: 8 }}>Amount</p>
+                    <input
+                      placeholder="Amount"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      style={inputStyle}
+                    />
+                  </div>
 
                   <div
                     style={{
-                      background: "#eef2ff",
+                      background: "linear-gradient(135deg, #eef2ff, #f8fafc)",
                       border: "1px solid #c7d2fe",
-                      borderRadius: 14,
-                      padding: 14,
+                      borderRadius: 16,
+                      padding: 16,
                       color: "#312e81",
                     }}
                   >
-                    <strong>Preview:</strong> {amount || 0} {fromCurrency} →{" "}
-                    {totalPreview.toLocaleString()} {toCurrency}
+                    <p style={{ ...smallLabel, marginBottom: 8, color: "#4338ca" }}>
+                      Live preview
+                    </p>
+                    <p style={{ margin: 0, fontWeight: 800, fontSize: 18 }}>
+                      {getCurrencySymbol(fromCurrency)}
+                      {formatNumber(Number(amount || 0))} {fromCurrency} →{" "}
+                      {getCurrencySymbol(toCurrency)}
+                      {formatNumber(totalPreview)} {toCurrency}
+                    </p>
                   </div>
 
                   <button
                     onClick={handlePost}
                     disabled={posting}
-                    style={primaryButton}
+                    style={{
+                      ...primaryButton,
+                      width: "100%",
+                      opacity: posting ? 0.7 : 1,
+                    }}
                   >
                     {posting ? "Posting..." : "Post Offer"}
                   </button>
@@ -530,7 +646,7 @@ export default function Home() {
                   }}
                 >
                   <div>
-                    <h2 style={{ margin: 0 }}>My Offers</h2>
+                    <h2 style={{ margin: 0, fontSize: 30 }}>My Offers</h2>
                     <p style={{ margin: "6px 0 0", color: "#6b7280" }}>
                       {myOffers.length} offer{myOffers.length === 1 ? "" : "s"}
                     </p>
@@ -541,8 +657,8 @@ export default function Home() {
                   <div
                     style={{
                       border: "1px dashed #d1d5db",
-                      borderRadius: 14,
-                      padding: 18,
+                      borderRadius: 16,
+                      padding: 20,
                       color: "#6b7280",
                       background: "#f9fafb",
                     }}
@@ -556,39 +672,60 @@ export default function Home() {
                         key={offer.id}
                         style={{
                           border: "1px solid #e5e7eb",
-                          borderRadius: 14,
+                          borderRadius: 16,
                           padding: 16,
                           background: "#f9fafb",
                         }}
                       >
-                        <p
+                        <div
                           style={{
-                            margin: "0 0 8px",
-                            fontWeight: 700,
-                            fontSize: 20,
-                            color: "#111827",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: 12,
+                            alignItems: "start",
+                            flexWrap: "wrap",
                           }}
                         >
-                          {offer.name}
-                        </p>
+                          <div>
+                            <p
+                              style={{
+                                margin: "0 0 8px",
+                                fontWeight: 800,
+                                fontSize: 20,
+                                color: "#111827",
+                              }}
+                            >
+                              {offer.name}
+                            </p>
 
-                        <p style={{ margin: "6px 0", color: "#374151" }}>
-                          {offer.amount} {offer.from_currency} →{" "}
-                          {(offer.amount * offer.rate).toLocaleString()}{" "}
-                          {offer.to_currency}
-                        </p>
+                            <p style={{ margin: "6px 0", color: "#374151" }}>
+                              {offer.from_currency} → {offer.to_currency}
+                            </p>
 
-                        <p style={{ margin: "6px 0", color: "#374151" }}>
-                          Rate: {offer.rate}
-                        </p>
+                            <p style={{ margin: "6px 0", color: "#374151" }}>
+                              Amount: {formatNumber(offer.amount)}{" "}
+                              {offer.from_currency}
+                            </p>
 
-                        <button
-                          onClick={() => handleDelete(offer.id)}
-                          disabled={deletingId === offer.id}
-                          style={dangerButton}
-                        >
-                          {deletingId === offer.id ? "Deleting..." : "Delete"}
-                        </button>
+                            <p style={{ margin: "6px 0", color: "#374151" }}>
+                              Total:{" "}
+                              {formatNumber(offer.amount * offer.rate)}{" "}
+                              {offer.to_currency}
+                            </p>
+
+                            <p style={{ margin: "6px 0", color: "#374151" }}>
+                              Rate: {formatNumber(offer.rate)}
+                            </p>
+                          </div>
+
+                          <button
+                            onClick={() => handleDelete(offer.id)}
+                            disabled={deletingId === offer.id}
+                            style={dangerButton}
+                          >
+                            {deletingId === offer.id ? "Deleting..." : "Delete"}
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -597,7 +734,9 @@ export default function Home() {
             )}
 
             <div style={cardStyle}>
-              <h2 style={{ marginTop: 0, marginBottom: 14 }}>Search & Filter</h2>
+              <h2 style={{ margin: "0 0 14px", fontSize: 30 }}>
+                Search & Filter
+              </h2>
 
               <div style={{ display: "grid", gap: 12 }}>
                 <input
@@ -650,11 +789,11 @@ export default function Home() {
                 gap: 12,
                 alignItems: "center",
                 flexWrap: "wrap",
-                marginBottom: 16,
+                marginBottom: 18,
               }}
             >
               <div>
-                <h2 style={{ margin: 0 }}>Marketplace</h2>
+                <h2 style={{ margin: 0, fontSize: 32 }}>Marketplace</h2>
                 <p style={{ margin: "6px 0 0", color: "#6b7280" }}>
                   {filteredOffers.length} matching offer
                   {filteredOffers.length === 1 ? "" : "s"}
@@ -663,11 +802,13 @@ export default function Home() {
 
               <div
                 style={{
-                  background: "#f3f4f6",
+                  background: "#f1f5f9",
+                  border: "1px solid #e2e8f0",
                   borderRadius: 999,
                   padding: "8px 12px",
-                  fontSize: 14,
-                  color: "#374151",
+                  fontSize: 13,
+                  color: "#334155",
+                  fontWeight: 700,
                 }}
               >
                 Live search enabled
@@ -678,8 +819,8 @@ export default function Home() {
               <div
                 style={{
                   border: "1px dashed #d1d5db",
-                  borderRadius: 14,
-                  padding: 22,
+                  borderRadius: 16,
+                  padding: 26,
                   color: "#6b7280",
                   background: "#f9fafb",
                   textAlign: "center",
@@ -689,87 +830,185 @@ export default function Home() {
               </div>
             ) : (
               <div style={{ display: "grid", gap: 14 }}>
-                {filteredOffers.map((offer) => (
-                  <div
-                    key={offer.id}
-                    style={{
-                      border: "1px solid #e5e7eb",
-                      borderRadius: 16,
-                      padding: 18,
-                      background: "#f9fafb",
-                    }}
-                  >
+                {filteredOffers.map((offer) => {
+                  const whatsappMessage = encodeURIComponent(
+                    `Hi ${offer.name}, I saw your ${offer.from_currency} to ${offer.to_currency} offer on P2P FX Marketplace. I'm interested in your rate ${offer.rate}.`
+                  );
+
+                  return (
                     <div
+                      key={offer.id}
                       style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: 12,
-                        alignItems: "start",
-                        flexWrap: "wrap",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 18,
+                        padding: 18,
+                        background: "#f9fafb",
                       }}
                     >
-                      <div>
-                        <p
-                          style={{
-                            margin: "0 0 8px",
-                            fontWeight: 700,
-                            fontSize: 22,
-                            color: "#111827",
-                          }}
-                        >
-                          {offer.name}
-                        </p>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: 16,
+                          alignItems: "start",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 220 }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: 10,
+                              alignItems: "center",
+                              flexWrap: "wrap",
+                              marginBottom: 10,
+                            }}
+                          >
+                            <p
+                              style={{
+                                margin: 0,
+                                fontWeight: 800,
+                                fontSize: 24,
+                                color: "#111827",
+                                textTransform: "capitalize",
+                              }}
+                            >
+                              {offer.name}
+                            </p>
 
-                        <p style={{ margin: "6px 0", color: "#374151" }}>
-                          <strong>Pair:</strong> {offer.from_currency} →{" "}
-                          {offer.to_currency}
-                        </p>
+                            <span
+                              style={{
+                                padding: "6px 10px",
+                                borderRadius: 999,
+                                background: "#dbeafe",
+                                color: "#1d4ed8",
+                                fontSize: 12,
+                                fontWeight: 800,
+                              }}
+                            >
+                              {offer.from_currency} → {offer.to_currency}
+                            </span>
+                          </div>
 
-                        <p style={{ margin: "6px 0", color: "#374151" }}>
-                          <strong>Amount:</strong> {offer.amount}{" "}
-                          {offer.from_currency}
-                        </p>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "1fr 1fr",
+                              gap: 12,
+                            }}
+                          >
+                            <div
+                              style={{
+                                background: "#ffffff",
+                                borderRadius: 14,
+                                padding: 12,
+                                border: "1px solid #edf2f7",
+                              }}
+                            >
+                              <p style={smallLabel}>Amount</p>
+                              <p
+                                style={{
+                                  margin: "8px 0 0",
+                                  fontWeight: 800,
+                                  color: "#0f172a",
+                                }}
+                              >
+                                {getCurrencySymbol(offer.from_currency)}
+                                {formatNumber(offer.amount)} {offer.from_currency}
+                              </p>
+                            </div>
 
-                        <p style={{ margin: "6px 0", color: "#374151" }}>
-                          <strong>Total:</strong>{" "}
-                          {(offer.amount * offer.rate).toLocaleString()}{" "}
-                          {offer.to_currency}
-                        </p>
+                            <div
+                              style={{
+                                background: "#ffffff",
+                                borderRadius: 14,
+                                padding: 12,
+                                border: "1px solid #edf2f7",
+                              }}
+                            >
+                              <p style={smallLabel}>Total</p>
+                              <p
+                                style={{
+                                  margin: "8px 0 0",
+                                  fontWeight: 800,
+                                  color: "#0f172a",
+                                }}
+                              >
+                                {getCurrencySymbol(offer.to_currency)}
+                                {formatNumber(offer.amount * offer.rate)}{" "}
+                                {offer.to_currency}
+                              </p>
+                            </div>
 
-                        <p style={{ margin: "6px 0", color: "#374151" }}>
-                          <strong>Rate:</strong> {offer.rate}
-                        </p>
+                            <div
+                              style={{
+                                background: "#ffffff",
+                                borderRadius: 14,
+                                padding: 12,
+                                border: "1px solid #edf2f7",
+                              }}
+                            >
+                              <p style={smallLabel}>Rate</p>
+                              <p
+                                style={{
+                                  margin: "8px 0 0",
+                                  fontWeight: 800,
+                                  color: "#0f172a",
+                                }}
+                              >
+                                {formatNumber(offer.rate)}
+                              </p>
+                            </div>
 
-                        <p style={{ margin: "6px 0", color: "#374151" }}>
-                          <strong>Phone:</strong> {offer.phone}
-                        </p>
+                            <div
+                              style={{
+                                background: "#ffffff",
+                                borderRadius: 14,
+                                padding: 12,
+                                border: "1px solid #edf2f7",
+                              }}
+                            >
+                              <p style={smallLabel}>Phone</p>
+                              <p
+                                style={{
+                                  margin: "8px 0 0",
+                                  fontWeight: 800,
+                                  color: "#0f172a",
+                                }}
+                              >
+                                {offer.phone}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {offer.phone && (
+                          <a
+                            href={`https://wa.me/${String(offer.phone).replace(
+                              /\D/g,
+                              ""
+                            )}?text=${whatsappMessage}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                              display: "inline-block",
+                              padding: "12px 16px",
+                              background: "#25D366",
+                              color: "#fff",
+                              borderRadius: 14,
+                              textDecoration: "none",
+                              fontWeight: 800,
+                              whiteSpace: "nowrap",
+                              boxShadow: "0 10px 20px rgba(37,211,102,0.18)",
+                            }}
+                          >
+                            Contact Seller
+                          </a>
+                        )}
                       </div>
-
-                      {offer.phone && (
-                        <a
-                          href={`https://wa.me/${String(offer.phone).replace(
-                            /\D/g,
-                            ""
-                          )}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{
-                            display: "inline-block",
-                            padding: "10px 14px",
-                            background: "#25D366",
-                            color: "#fff",
-                            borderRadius: 12,
-                            textDecoration: "none",
-                            fontWeight: 700,
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          Contact Seller
-                        </a>
-                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
