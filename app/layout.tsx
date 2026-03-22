@@ -16,7 +16,9 @@ export default function RootLayout({
       <body
         style={{
           margin: 0,
+          padding: 0,
           background: "#f3f6fb",
+          fontFamily: "Inter, Arial, Helvetica, sans-serif",
         }}
       >
         <Toaster position="top-right" />
