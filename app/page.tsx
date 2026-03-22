@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -164,9 +163,6 @@ export default function Home() {
   ) => {
     if (!rawAmount || !rawRate) return 0;
 
-    // Common TZS logic:
-    // Foreign -> TZS  => multiply
-    // TZS -> Foreign  => divide
     if (from !== "TZS" && to === "TZS") {
       return rawAmount * rawRate;
     }
@@ -175,7 +171,6 @@ export default function Home() {
       return rawAmount / rawRate;
     }
 
-    // fallback for same-style pairs
     return rawAmount * rawRate;
   };
 
