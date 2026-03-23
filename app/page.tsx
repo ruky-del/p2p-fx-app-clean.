@@ -1185,9 +1185,3 @@ export default function Home() {
     </main>
   );
 }
-
-git add .
-git commit -m "full page fix with correct supabase import"
-git push
-
-nano app/page.tsx
