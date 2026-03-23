@@ -559,13 +559,17 @@ export default function Home() {
     minWidth: 150,
   };
 
-  const sellerBadge = (phone: string) => {
-    return phone.startsWith("+255") || phone.startsWith("+44")
-      ? "Verified Format"
-      : "Check Number";
+  const sellerBadge = (userId: string) => {
+    const count = offers.filter((o) => o.user_id === userId).length;
+
+    if (count >= 5) return "⭐ Trusted Seller";
+    if (count >= 2) return "Active Seller";
+    return "New Seller";
   };
 
-  const tabButtonStyle = (tab: "home" | "market" | "profile"): React.CSSProperties => ({
+  const tabButtonStyle = (
+    tab: "home" | "market" | "profile"
+  ): React.CSSProperties => ({
     padding: "12px 18px",
     borderRadius: 14,
     border: "1px solid",
@@ -606,7 +610,6 @@ export default function Home() {
           >
             Profile
           </button>
-        </div>
         {activeTab === "home" && (
           <div style={{ display: "grid", gap: 20 }}>
             <div style={heroStyle}>
@@ -1429,4 +1432,4 @@ export default function Home() {
       </div>
     </main>
   );
-}
+}</div>
