@@ -64,6 +64,15 @@ export default function Home() {
     }, 3000);
   };
 
+  const normalizePhone = (value: string) => {
+    return value.replace(/\s+/g, "");
+  };
+
+  const isValidInternationalPhone = (value: string) => {
+    const phone = normalizePhone(value);
+    return /^\+[1-9]\d{7,14}$/.test(phone);
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -166,13 +175,20 @@ export default function Home() {
       return;
     }
 
+    const cleanedPhone = normalizePhone(profilePhone);
+
+    if (!isValidInternationalPhone(cleanedPhone)) {
+      showNotice("error", "Phone must include country code, e.g. +255... or +44...");
+      return;
+    }
+
     setSavingProfile(true);
 
     const payload = {
       id: session.user.id,
       email: session.user.email,
       name: profileName.trim(),
-      phone: profilePhone.trim(),
+      phone: cleanedPhone,
     };
 
     const { error } = await supabase.from("profiles").upsert(payload);
@@ -186,7 +202,7 @@ export default function Home() {
     }
 
     await fetchProfile(session.user.id);
-    showNotice("success", "Profile saved");
+    showNotice("success", "Profile saved successfully");
   }
 
   async function fetchOffers() {
@@ -245,6 +261,11 @@ export default function Home() {
 
     if (!profile?.name || !profile?.phone) {
       showNotice("error", "Save profile first");
+      return;
+    }
+
+    if (!isValidInternationalPhone(profile.phone)) {
+      showNotice("error", "Update your profile phone with country code first");
       return;
     }
 
@@ -534,10 +555,13 @@ export default function Home() {
                     <p style={labelStyle}>Phone</p>
                     <input
                       style={inputStyle}
-                      placeholder="Your phone number"
+                      placeholder="Phone with country code, e.g. +255712345678"
                       value={profilePhone}
                       onChange={(e) => setProfilePhone(e.target.value)}
                     />
+                    <p style={{ margin: "8px 0 0", fontSize: 13, color: "#64748b" }}>
+                      Use international format: +255... or +44...
+                    </p>
                   </div>
 
                   <button style={primaryButton} onClick={saveProfile}>
@@ -691,14 +715,12 @@ export default function Home() {
                 ) : (
                   <div style={{ display: "grid", gap: 12 }}>
                     {myOffers.map((offer) => {
-                      const total =
-                        offer.from_currency === "TZS" &&
-                        offer.to_currency === "GBP"
-                          ? offer.amount / offer.rate
-                          : offer.from_currency === "GBP" &&
-                            offer.to_currency === "TZS"
-                          ? offer.amount * offer.rate
-                          : offer.amount;
+                      const total = calculateConvertedAmount(
+                        offer.amount,
+                        offer.rate,
+                        offer.from_currency,
+                        offer.to_currency
+                      );
 
                       return (
                         <div
@@ -844,14 +866,12 @@ export default function Home() {
                     `Hi ${offer.name}, I'm interested in your ${offer.from_currency} to ${offer.to_currency} offer on P2P FX Marketplace.`
                   );
 
-                  const total =
-                    offer.from_currency === "TZS" &&
-                    offer.to_currency === "GBP"
-                      ? offer.amount / offer.rate
-                      : offer.from_currency === "GBP" &&
-                        offer.to_currency === "TZS"
-                      ? offer.amount * offer.rate
-                      : offer.amount;
+                  const total = calculateConvertedAmount(
+                    offer.amount,
+                    offer.rate,
+                    offer.from_currency,
+                    offer.to_currency
+                  );
 
                   return (
                     <div
