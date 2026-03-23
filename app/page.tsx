@@ -448,46 +448,88 @@ export default function Home() {
     background: notice?.type === "success" ? "#16a34a" : "#dc2626",
   };
 
+  const statBox: React.CSSProperties = {
+    background: "rgba(255,255,255,0.1)",
+    border: "1px solid rgba(255,255,255,0.16)",
+    borderRadius: 18,
+    padding: 16,
+    minWidth: 150,
+  };
+
+  const sellerBadge = (phone: string) => {
+    return phone.startsWith("+255") || phone.startsWith("+44")
+      ? "Verified Format"
+      : "Check Number";
+  };
+
   return (
     <main style={pageStyle}>
       {notice && <div style={noticeStyle}>{notice.text}</div>}
 
       <div style={containerStyle}>
         <div style={heroStyle}>
-          <p
+          <div
             style={{
-              margin: 0,
-              fontSize: 12,
-              textTransform: "uppercase",
-              letterSpacing: 1,
-              opacity: 0.85,
-              fontWeight: 700,
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 20,
+              alignItems: "center",
+              flexWrap: "wrap",
             }}
           >
-            Live Marketplace
-          </p>
+            <div style={{ maxWidth: 700 }}>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 12,
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                  opacity: 0.85,
+                  fontWeight: 700,
+                }}
+              >
+                Live Marketplace
+              </p>
 
-          <h1
-            style={{
-              margin: "10px 0 12px",
-              fontSize: 50,
-              lineHeight: 1.02,
-            }}
-          >
-            P2P FX Marketplace
-          </h1>
+              <h1
+                style={{
+                  margin: "10px 0 12px",
+                  fontSize: 50,
+                  lineHeight: 1.02,
+                }}
+              >
+                P2P FX Marketplace
+              </h1>
 
-          <p
-            style={{
-              margin: 0,
-              fontSize: 17,
-              maxWidth: 760,
-              color: "rgba(255,255,255,0.88)",
-            }}
-          >
-            Buy and sell foreign currency with live offers, faster posting, and
-            direct WhatsApp contact.
-          </p>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 17,
+                  maxWidth: 760,
+                  color: "rgba(255,255,255,0.88)",
+                }}
+              >
+                Buy and sell foreign currency with live offers, direct WhatsApp
+                contact, and a cleaner marketplace experience.
+              </p>
+            </div>
+
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <div style={statBox}>
+                <p style={{ margin: 0, opacity: 0.75, fontSize: 13 }}>Live Offers</p>
+                <p style={{ margin: "8px 0 0", fontWeight: 800, fontSize: 24 }}>
+                  {offers.length}
+                </p>
+              </div>
+
+              <div style={statBox}>
+                <p style={{ margin: 0, opacity: 0.75, fontSize: 13 }}>My Offers</p>
+                <p style={{ margin: "8px 0 0", fontWeight: 800, fontSize: 24 }}>
+                  {myOffers.length}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div style={gridStyle}>
@@ -582,7 +624,7 @@ export default function Home() {
             )}
 
             <div style={cardStyle}>
-              <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>Post Offer</h2>
+              <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>Create Offer</h2>
 
               {session ? (
                 <>
@@ -691,13 +733,13 @@ export default function Home() {
                     </div>
 
                     <button style={primaryButton} onClick={postOffer}>
-                      {posting ? "Posting..." : "Post Offer"}
+                      {posting ? "Posting..." : "Create Offer"}
                     </button>
                   </div>
                 </>
               ) : (
                 <p style={{ margin: 0, color: "#64748b" }}>
-                  Login first to post an offer.
+                  Login first to create an offer.
                 </p>
               )}
             </div>
@@ -923,6 +965,19 @@ export default function Home() {
                               style={{
                                 padding: "6px 10px",
                                 borderRadius: 999,
+                                background: "#dcfce7",
+                                color: "#15803d",
+                                fontSize: 12,
+                                fontWeight: 800,
+                              }}
+                            >
+                              {sellerBadge(offer.phone)}
+                            </span>
+
+                            <span
+                              style={{
+                                padding: "6px 10px",
+                                borderRadius: 999,
                                 background: "#dbeafe",
                                 color: "#1d4ed8",
                                 fontSize: 12,
@@ -1041,7 +1096,7 @@ export default function Home() {
                             boxShadow: "0 10px 20px rgba(34,197,94,0.18)",
                           }}
                         >
-                          Contact Seller
+                          Chat on WhatsApp
                         </a>
                       </div>
                     </div>
