@@ -3,41 +3,22 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
-type Offer = {
-  id: string;
-  name: string;
-  phone: string;
-  from_currency: string;
-  to_currency: string;
-  rate: number;
-  amount: number;
-};
-
 export default function Home() {
-  const [offers, setOffers] = useState<Offer[]>([]);
+  const [offers, setOffers] = useState([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [fromCurrency, setFromCurrency] = useState("TZS");
-  const [toCurrency, setToCurrency] = useState("GBP");
-  const [rate, setRate] = useState(3600);
   const [amount, setAmount] = useState(0);
+  const [rate, setRate] = useState(3600);
 
-  const total =
-    fromCurrency === "TZS" && toCurrency === "GBP"
-      ? amount / rate
-      : fromCurrency === "GBP" && toCurrency === "TZS"
-      ? amount * rate
-      : amount;
+  const total = amount / rate;
 
   async function fetchOffers() {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("offers")
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (!error && data) {
-      setOffers(data as Offer[]);
-    }
+    if (data) setOffers(data);
   }
 
   useEffect(() => {
@@ -45,132 +26,128 @@ export default function Home() {
   }, []);
 
   async function postOffer() {
-    if (!name || !phone || !amount || !rate) return;
-
-    const { error } = await supabase.from("offers").insert([
+    await supabase.from("offers").insert([
       {
         name,
         phone,
-        from_currency: fromCurrency,
-        to_currency: toCurrency,
-        rate,
+        from_currency: "TZS",
+        to_currency: "GBP",
         amount,
+        rate,
       },
     ]);
 
-    if (!error) {
-      setName("");
-      setPhone("");
-      setAmount(0);
-      setRate(3600);
-      fetchOffers();
-      alert("Offer posted successfully");
-    }
+    fetchOffers();
+    setName("");
+    setPhone("");
+    setAmount(0);
   }
 
   return (
-    <main style={{ padding: 20, fontFamily: "Arial, sans-serif" }}>
-      <h1>P2P FX Marketplace</h1>
+    <main style={{ padding: 30, fontFamily: "Arial" }}>
+      <h1 style={{ fontSize: 28, marginBottom: 20 }}>
+        💱 P2P FX Marketplace
+      </h1>
 
-      <div style={{ maxWidth: 500, marginBottom: 30 }}>
+      {/* FORM */}
+      <div
+        style={{
+          background: "#f9f9f9",
+          padding: 20,
+          borderRadius: 10,
+          maxWidth: 400,
+          marginBottom: 30,
+        }}
+      >
         <h2>Post Offer</h2>
 
         <input
-          style={{ display: "block", width: "100%", marginBottom: 10, padding: 10 }}
           placeholder="Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          style={{ width: "100%", padding: 10, marginBottom: 10 }}
         />
 
         <input
-          style={{ display: "block", width: "100%", marginBottom: 10, padding: 10 }}
           placeholder="Phone"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
+          style={{ width: "100%", padding: 10, marginBottom: 10 }}
         />
 
-        <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-          <select
-            style={{ padding: 10, flex: 1 }}
-            value={fromCurrency}
-            onChange={(e) => setFromCurrency(e.target.value)}
-          >
-            <option>TZS</option>
-            <option>GBP</option>
-          </select>
-
-          <select
-            style={{ padding: 10, flex: 1 }}
-            value={toCurrency}
-            onChange={(e) => setToCurrency(e.target.value)}
-          >
-            <option>GBP</option>
-            <option>TZS</option>
-          </select>
-        </div>
+        <input
+          type="number"
+          placeholder="Amount (TZS)"
+          value={amount}
+          onChange={(e) => setAmount(Number(e.target.value))}
+          style={{ width: "100%", padding: 10, marginBottom: 10 }}
+        />
 
         <input
-          style={{ display: "block", width: "100%", marginBottom: 10, padding: 10 }}
           type="number"
           placeholder="Rate"
           value={rate}
           onChange={(e) => setRate(Number(e.target.value))}
-        />
-
-        <input
-          style={{ display: "block", width: "100%", marginBottom: 10, padding: 10 }}
-          type="number"
-          placeholder="Amount"
-          value={amount}
-          onChange={(e) => setAmount(Number(e.target.value))}
+          style={{ width: "100%", padding: 10, marginBottom: 10 }}
         />
 
         <p>
-          Preview: {amount} {fromCurrency} → {total.toFixed(2)} {toCurrency}
+          Preview: {amount} TZS → {total.toFixed(2)} GBP
         </p>
 
         <button
-          style={{ padding: "10px 16px", cursor: "pointer" }}
           onClick={postOffer}
+          style={{
+            background: "#16a34a",
+            color: "white",
+            padding: "10px 15px",
+            borderRadius: 6,
+            border: "none",
+            cursor: "pointer",
+          }}
         >
           Post Offer
         </button>
       </div>
 
-      <div>
-        <h2>Marketplace</h2>
+      {/* MARKETPLACE */}
+      <h2>Marketplace</h2>
 
-        {offers.map((offer) => {
-          const offerTotal =
-            offer.from_currency === "TZS" && offer.to_currency === "GBP"
-              ? offer.amount / offer.rate
-              : offer.from_currency === "GBP" && offer.to_currency === "TZS"
-              ? offer.amount * offer.rate
-              : offer.amount;
+      {offers.map((offer: any) => (
+        <div
+          key={offer.id}
+          style={{
+            border: "1px solid #ddd",
+            padding: 15,
+            borderRadius: 10,
+            marginBottom: 15,
+            maxWidth: 400,
+          }}
+        >
+          <h3>{offer.name}</h3>
+          <p>📞 {offer.phone}</p>
+          <p>
+            {offer.amount} TZS → {(offer.amount / offer.rate).toFixed(2)} GBP
+          </p>
+          <p>Rate: {offer.rate}</p>
 
-          return (
-            <div
-              key={offer.id}
-              style={{
-                border: "1px solid #ccc",
-                borderRadius: 8,
-                padding: 12,
-                marginBottom: 12,
-                maxWidth: 500,
-              }}
-            >
-              <p><strong>{offer.name}</strong></p>
-              <p>Phone: {offer.phone}</p>
-              <p>
-                Pair: {offer.from_currency} → {offer.to_currency}
-              </p>
-              <p>Amount: {offer.amount}</p>
-              <p>Rate: {offer.rate}</p>
-              <p>Total: {offerTotal.toFixed(2)} {offer.to_currency}</p>
-            </div>
-          );
-        })}
-      </div>
+          <a
+            href={`https://wa.me/${offer.phone}`}
+            target="_blank"
+            style={{
+              display: "inline-block",
+              marginTop: 10,
+              background: "#22c55e",
+              color: "white",
+              padding: "8px 12px",
+              borderRadius: 6,
+              textDecoration: "none",
+            }}
+          >
+            💬 Contact Seller
+          </a>
+        </div>
+      ))}
     </main>
   );
 }
