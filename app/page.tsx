@@ -64,14 +64,24 @@ export default function Home() {
     }, 3000);
   };
 
-  const normalizePhone = (value: string) => {
-    return value.replace(/\s+/g, "");
-  };
+  const normalizePhone = (value: string) => value.replace(/\s+/g, "");
 
   const isValidInternationalPhone = (value: string) => {
-    const phone = normalizePhone(value);
-    return /^\+[1-9]\d{7,14}$/.test(phone);
+    return /^\+[1-9]\d{7,14}$/.test(value);
   };
+
+  function smartPhoneFormat(value: string) {
+    let cleanedPhone = normalizePhone(value);
+
+    if (!cleanedPhone.startsWith("+")) {
+      if (cleanedPhone.startsWith("0")) {
+        cleanedPhone = cleanedPhone.slice(1);
+      }
+      cleanedPhone = "+255" + cleanedPhone;
+    }
+
+    return cleanedPhone;
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -164,54 +174,22 @@ export default function Home() {
     showNotice("success", "Logged out");
   }
 
- 
-   async function saveProfile() {
-  if (!session?.user?.id) {
-    showNotice("error", "Login first");
-    return;
-  }
+  async function saveProfile() {
+    if (!session?.user?.id) {
+      showNotice("error", "Login first");
+      return;
+    }
 
-  if (!profileName || !profilePhone) {
-    showNotice("error", "Enter your name and phone");
-    return;
-  }
+    if (!profileName || !profilePhone) {
+      showNotice("error", "Enter your name and phone");
+      return;
+    }
 
-  let cleanedPhone = normalizePhone(profilePhone);
+    const cleanedPhone = smartPhoneFormat(profilePhone);
 
-  if (!cleanedPhone.startsWith("+")) {
-  if (cleanedPhone.startsWith("0")) {
-    cleanedPhone = cleanedPhone.slice(1);
-  }
-  cleanedPhone = "+255" + cleanedPhone;
-}
-
-  if (!isValidInternationalPhone(cleanedPhone)) {
-    showNotice("error", "Phone must include country code, e.g. +255... or +44...");
-    return;
-  }
-
-  setSavingProfile(true);
-
-  const payload = {
-    id: session.user.id,
-    email: session.user.email,
-    name: profileName.trim(),
-    phone: cleanedPhone,
-  };
-
-  const { error } = await supabase.from("profiles").upsert(payload);
-
-  setSavingProfile(false);
-
-  if (error) {
-    console.error(error);
-    showNotice("error", "Failed to save profile");
-    return;
-  }
-
-  await fetchProfile(session.user.id);
-  showNotice("success", "Profile saved successfully");
-}
+    if (!isValidInternationalPhone(cleanedPhone)) {
+      showNotice("error", "Phone must include a valid country code, e.g. +255...");
+      return;
     }
 
     setSavingProfile(true);
@@ -296,11 +274,6 @@ export default function Home() {
       return;
     }
 
-    if (!isValidInternationalPhone(profile.phone)) {
-      showNotice("error", "Update your profile phone with country code first");
-      return;
-    }
-
     if (!numAmount || !numRate) {
       showNotice("error", "Enter amount and rate");
       return;
@@ -382,7 +355,7 @@ export default function Home() {
   const pageStyle: React.CSSProperties = {
     minHeight: "100vh",
     background:
-      "linear-gradient(180deg, #eef4ff 0%, #f8fbff 45%, #ffffff 100%)",
+      "radial-gradient(circle at top left, #dbeafe 0%, #eef4ff 35%, #f8fbff 70%, #ffffff 100%)",
     padding: "24px 16px 60px",
     fontFamily: "Arial, sans-serif",
     color: "#0f172a",
@@ -396,8 +369,8 @@ export default function Home() {
   const heroStyle: React.CSSProperties = {
     background: "linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%)",
     color: "white",
-    borderRadius: 24,
-    padding: 28,
+    borderRadius: 28,
+    padding: 30,
     marginBottom: 20,
     boxShadow: "0 18px 40px rgba(29, 78, 216, 0.22)",
   };
@@ -410,11 +383,12 @@ export default function Home() {
   };
 
   const cardStyle: React.CSSProperties = {
-    background: "#ffffff",
+    background: "rgba(255,255,255,0.96)",
+    backdropFilter: "blur(8px)",
     border: "1px solid #e5e7eb",
-    borderRadius: 20,
+    borderRadius: 22,
     padding: 22,
-    boxShadow: "0 10px 30px rgba(15, 23, 42, 0.05)",
+    boxShadow: "0 14px 34px rgba(15, 23, 42, 0.06)",
   };
 
   const inputStyle: React.CSSProperties = {
@@ -496,7 +470,7 @@ export default function Home() {
           <h1
             style={{
               margin: "10px 0 12px",
-              fontSize: 48,
+              fontSize: 50,
               lineHeight: 1.02,
             }}
           >
@@ -511,7 +485,7 @@ export default function Home() {
               color: "rgba(255,255,255,0.88)",
             }}
           >
-            Buy and sell foreign currency with live offers, fast posting, and
+            Buy and sell foreign currency with live offers, faster posting, and
             direct WhatsApp contact.
           </p>
         </div>
@@ -592,7 +566,7 @@ export default function Home() {
                       onChange={(e) => setProfilePhone(e.target.value)}
                     />
                     <p style={{ margin: "8px 0 0", fontSize: 13, color: "#64748b" }}>
-                      Use international format: +255... or +44...
+                      Local number? Just type 07... and the app will convert it.
                     </p>
                   </div>
 
