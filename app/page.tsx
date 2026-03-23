@@ -328,6 +328,7 @@ export default function Home() {
     setEditToCurrency(offer.to_currency);
     setEditRate(String(offer.rate));
     setEditAmount(String(offer.amount));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function cancelEditOffer() {
@@ -668,7 +669,15 @@ export default function Home() {
                     onChange={(e) => setPassword(e.target.value)}
                   />
 
-                  <button style={primaryButton} onClick={handleAuth}>
+                  <button
+                    style={{
+                      ...primaryButton,
+                      opacity: authLoading ? 0.7 : 1,
+                      cursor: authLoading ? "not-allowed" : "pointer",
+                    }}
+                    onClick={handleAuth}
+                    disabled={authLoading}
+                  >
                     {authLoading
                       ? "Loading..."
                       : authMode === "signup"
@@ -709,7 +718,15 @@ export default function Home() {
                     </p>
                   </div>
 
-                  <button style={primaryButton} onClick={saveProfile}>
+                  <button
+                    style={{
+                      ...primaryButton,
+                      opacity: savingProfile ? 0.7 : 1,
+                      cursor: savingProfile ? "not-allowed" : "pointer",
+                    }}
+                    onClick={saveProfile}
+                    disabled={savingProfile}
+                  >
                     {savingProfile ? "Saving..." : "Save Profile"}
                   </button>
 
@@ -829,7 +846,15 @@ export default function Home() {
                       </p>
                     </div>
 
-                    <button style={primaryButton} onClick={postOffer}>
+                    <button
+                      style={{
+                        ...primaryButton,
+                        opacity: posting ? 0.7 : 1,
+                        cursor: posting ? "not-allowed" : "pointer",
+                      }}
+                      onClick={postOffer}
+                      disabled={posting}
+                    >
                       {posting ? "Posting..." : "Create Offer"}
                     </button>
                   </div>
@@ -931,9 +956,18 @@ export default function Home() {
                   </div>
 
                   <div style={{ display: "flex", gap: 10 }}>
-                    <button style={primaryButton} onClick={updateOffer}>
+                    <button
+                      style={{
+                        ...primaryButton,
+                        opacity: updatingOffer ? 0.7 : 1,
+                        cursor: updatingOffer ? "not-allowed" : "pointer",
+                      }}
+                      onClick={updateOffer}
+                      disabled={updatingOffer}
+                    >
                       {updatingOffer ? "Updating..." : "Save Changes"}
                     </button>
+
                     <button style={secondaryButton} onClick={cancelEditOffer}>
                       Cancel
                     </button>
@@ -1007,8 +1041,14 @@ export default function Home() {
                             </button>
 
                             <button
-                              style={dangerButton}
+                              style={{
+                                ...dangerButton,
+                                opacity: deletingId === offer.id ? 0.7 : 1,
+                                cursor:
+                                  deletingId === offer.id ? "not-allowed" : "pointer",
+                              }}
                               onClick={() => deleteOffer(offer.id)}
+                              disabled={deletingId === offer.id}
                             >
                               {deletingId === offer.id ? "Deleting..." : "Delete"}
                             </button>
