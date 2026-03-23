@@ -366,7 +366,8 @@ export default function Home() {
         rate: editRateNum,
         amount: editAmountNum,
       })
-      .eq("id", editingOfferId);
+      .eq("id", editingOfferId)
+      .eq("user_id", session?.user?.id);
 
     setUpdatingOffer(false);
 
@@ -388,7 +389,11 @@ export default function Home() {
 
     setDeletingId(offerId);
 
-    const { error } = await supabase.from("offers").delete().eq("id", offerId);
+    const { error } = await supabase
+      .from("offers")
+      .delete()
+      .eq("id", offerId)
+      .eq("user_id", session?.user?.id);
 
     setDeletingId(null);
 
@@ -561,7 +566,6 @@ export default function Home() {
 
   const sellerBadge = (userId: string) => {
     const count = offers.filter((o) => o.user_id === userId).length;
-
     if (count >= 5) return "⭐ Trusted Seller";
     if (count >= 2) return "Active Seller";
     return "New Seller";
@@ -610,6 +614,8 @@ export default function Home() {
           >
             Profile
           </button>
+        </div>
+
         {activeTab === "home" && (
           <div style={{ display: "grid", gap: 20 }}>
             <div style={heroStyle}>
@@ -1027,7 +1033,7 @@ export default function Home() {
                                 fontWeight: 800,
                               }}
                             >
-                              {sellerBadge(offer.phone)}
+                              {sellerBadge(offer.user_id)}
                             </span>
 
                             <span
@@ -1131,6 +1137,47 @@ export default function Home() {
                               </p>
                             </div>
                           </div>
+
+                          {offer.user_id === session?.user?.id && (
+                            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                              <button
+                                onClick={() => startEditOffer(offer)}
+                                style={{
+                                  padding: "8px 12px",
+                                  borderRadius: 10,
+                                  border: "none",
+                                  background: "#2563eb",
+                                  color: "#fff",
+                                  cursor: "pointer",
+                                  fontSize: 13,
+                                  fontWeight: 700,
+                                }}
+                              >
+                                ✏️ Edit
+                              </button>
+
+                              <button
+                                onClick={() => deleteOffer(offer.id)}
+                                disabled={deletingId === offer.id}
+                                style={{
+                                  padding: "8px 12px",
+                                  borderRadius: 10,
+                                  border: "none",
+                                  background: "#dc2626",
+                                  color: "#fff",
+                                  cursor:
+                                    deletingId === offer.id
+                                      ? "not-allowed"
+                                      : "pointer",
+                                  fontSize: 13,
+                                  fontWeight: 700,
+                                  opacity: deletingId === offer.id ? 0.7 : 1,
+                                }}
+                              >
+                                {deletingId === offer.id ? "Deleting..." : "🗑 Delete"}
+                              </button>
+                            </div>
+                          )}
                         </div>
 
                         <a
@@ -1432,4 +1479,4 @@ export default function Home() {
       </div>
     </main>
   );
-}</div>
+}
