@@ -179,8 +179,11 @@ export default function Home() {
   let cleanedPhone = normalizePhone(profilePhone);
 
   if (!cleanedPhone.startsWith("+")) {
-    cleanedPhone = "+255" + cleanedPhone;
+  if (cleanedPhone.startsWith("0")) {
+    cleanedPhone = cleanedPhone.slice(1);
   }
+  cleanedPhone = "+255" + cleanedPhone;
+}
 
   if (!isValidInternationalPhone(cleanedPhone)) {
     showNotice("error", "Phone must include country code, e.g. +255... or +44...");
