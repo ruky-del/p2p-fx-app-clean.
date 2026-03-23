@@ -164,22 +164,51 @@ export default function Home() {
     showNotice("success", "Logged out");
   }
 
-  async function saveProfile() {
-    if (!session?.user?.id) {
-      showNotice("error", "Login first");
-      return;
-    }
+ 
+   async function saveProfile() {
+  if (!session?.user?.id) {
+    showNotice("error", "Login first");
+    return;
+  }
 
-    if (!profileName || !profilePhone) {
-      showNotice("error", "Enter your name and phone");
-      return;
-    }
+  if (!profileName || !profilePhone) {
+    showNotice("error", "Enter your name and phone");
+    return;
+  }
 
-    const cleanedPhone = normalizePhone(profilePhone);
+  let cleanedPhone = normalizePhone(profilePhone);
 
-    if (!isValidInternationalPhone(cleanedPhone)) {
-      showNotice("error", "Phone must include country code, e.g. +255... or +44...");
-      return;
+  if (!cleanedPhone.startsWith("+")) {
+    cleanedPhone = "+255" + cleanedPhone;
+  }
+
+  if (!isValidInternationalPhone(cleanedPhone)) {
+    showNotice("error", "Phone must include country code, e.g. +255... or +44...");
+    return;
+  }
+
+  setSavingProfile(true);
+
+  const payload = {
+    id: session.user.id,
+    email: session.user.email,
+    name: profileName.trim(),
+    phone: cleanedPhone,
+  };
+
+  const { error } = await supabase.from("profiles").upsert(payload);
+
+  setSavingProfile(false);
+
+  if (error) {
+    console.error(error);
+    showNotice("error", "Failed to save profile");
+    return;
+  }
+
+  await fetchProfile(session.user.id);
+  showNotice("success", "Profile saved successfully");
+}
     }
 
     setSavingProfile(true);
