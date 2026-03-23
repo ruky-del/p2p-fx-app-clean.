@@ -29,6 +29,10 @@ type Notice = {
 } | null;
 
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<"home" | "market" | "profile">(
+    "home"
+  );
+
   const [session, setSession] = useState<any>(null);
 
   const [email, setEmail] = useState("");
@@ -320,6 +324,7 @@ export default function Home() {
     setRate("3600");
     await fetchOffers();
     showNotice("success", "Offer posted successfully");
+    setActiveTab("market");
   }
 
   function startEditOffer(offer: Offer) {
@@ -328,6 +333,7 @@ export default function Home() {
     setEditToCurrency(offer.to_currency);
     setEditRate(String(offer.rate));
     setEditAmount(String(offer.amount));
+    setActiveTab("profile");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -373,6 +379,7 @@ export default function Home() {
     await fetchOffers();
     cancelEditOffer();
     showNotice("success", "Offer updated successfully");
+    setActiveTab("market");
   }
 
   async function deleteOffer(offerId: string) {
@@ -392,6 +399,11 @@ export default function Home() {
     }
 
     await fetchOffers();
+
+    if (editingOfferId === offerId) {
+      cancelEditOffer();
+    }
+
     showNotice("success", "Offer deleted");
   }
 
@@ -440,13 +452,6 @@ export default function Home() {
     padding: 30,
     marginBottom: 20,
     boxShadow: "0 18px 40px rgba(29, 78, 216, 0.22)",
-  };
-
-  const gridStyle: React.CSSProperties = {
-    display: "grid",
-    gridTemplateColumns: "380px 1fr",
-    gap: 20,
-    alignItems: "start",
   };
 
   const cardStyle: React.CSSProperties = {
@@ -560,78 +565,123 @@ export default function Home() {
       : "Check Number";
   };
 
+  const tabButtonStyle = (tab: "home" | "market" | "profile"): React.CSSProperties => ({
+    padding: "12px 18px",
+    borderRadius: 14,
+    border: "1px solid",
+    borderColor: activeTab === tab ? "#2563eb" : "#dbe2ea",
+    background: activeTab === tab ? "#2563eb" : "#ffffff",
+    color: activeTab === tab ? "#ffffff" : "#0f172a",
+    fontWeight: 800,
+    cursor: "pointer",
+    boxShadow:
+      activeTab === tab ? "0 10px 20px rgba(37,99,235,0.18)" : "none",
+  });
+
   return (
     <main style={pageStyle}>
       {notice && <div style={noticeStyle}>{notice.text}</div>}
 
       <div style={containerStyle}>
-        <div style={heroStyle}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 20,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
+        <div
+          style={{
+            display: "flex",
+            gap: 10,
+            marginBottom: 20,
+            flexWrap: "wrap",
+          }}
+        >
+          <button style={tabButtonStyle("home")} onClick={() => setActiveTab("home")}>
+            Home
+          </button>
+          <button
+            style={tabButtonStyle("market")}
+            onClick={() => setActiveTab("market")}
           >
-            <div style={{ maxWidth: 700 }}>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 12,
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                  opacity: 0.85,
-                  fontWeight: 700,
-                }}
-              >
-                Live Marketplace
-              </p>
-
-              <h1
-                style={{
-                  margin: "10px 0 12px",
-                  fontSize: 50,
-                  lineHeight: 1.02,
-                }}
-              >
-                P2P FX Marketplace
-              </h1>
-
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 17,
-                  maxWidth: 760,
-                  color: "rgba(255,255,255,0.88)",
-                }}
-              >
-                Buy and sell foreign currency with live offers, direct WhatsApp
-                contact, and a cleaner marketplace experience.
-              </p>
-            </div>
-
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <div style={statBox}>
-                <p style={{ margin: 0, opacity: 0.75, fontSize: 13 }}>Live Offers</p>
-                <p style={{ margin: "8px 0 0", fontWeight: 800, fontSize: 24 }}>
-                  {offers.length}
-                </p>
-              </div>
-
-              <div style={statBox}>
-                <p style={{ margin: 0, opacity: 0.75, fontSize: 13 }}>My Offers</p>
-                <p style={{ margin: "8px 0 0", fontWeight: 800, fontSize: 24 }}>
-                  {myOffers.length}
-                </p>
-              </div>
-            </div>
-          </div>
+            Marketplace
+          </button>
+          <button
+            style={tabButtonStyle("profile")}
+            onClick={() => setActiveTab("profile")}
+          >
+            Profile
+          </button>
         </div>
-
-        <div style={gridStyle}>
+        {activeTab === "home" && (
           <div style={{ display: "grid", gap: 20 }}>
+            <div style={heroStyle}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 20,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ maxWidth: 700 }}>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: 12,
+                      textTransform: "uppercase",
+                      letterSpacing: 1,
+                      opacity: 0.85,
+                      fontWeight: 700,
+                    }}
+                  >
+                    Live Marketplace
+                  </p>
+
+                  <h1
+                    style={{
+                      margin: "10px 0 12px",
+                      fontSize: 50,
+                      lineHeight: 1.02,
+                    }}
+                  >
+                    P2P FX Marketplace
+                  </h1>
+
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: 17,
+                      maxWidth: 760,
+                      color: "rgba(255,255,255,0.88)",
+                    }}
+                  >
+                    Buy and sell foreign currency with live offers, direct
+                    WhatsApp contact, and a cleaner marketplace experience.
+                  </p>
+                </div>
+
+                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                  <div style={statBox}>
+                    <p style={{ margin: 0, opacity: 0.75, fontSize: 13 }}>
+                      Live Offers
+                    </p>
+                    <p
+                      style={{ margin: "8px 0 0", fontWeight: 800, fontSize: 24 }}
+                    >
+                      {offers.length}
+                    </p>
+                  </div>
+
+                  <div style={statBox}>
+                    <p style={{ margin: 0, opacity: 0.75, fontSize: 13 }}>
+                      My Offers
+                    </p>
+                    <p
+                      style={{ margin: "8px 0 0", fontWeight: 800, fontSize: 24 }}
+                    >
+                      {myOffers.length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {!session && (
               <div style={cardStyle}>
                 <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>
@@ -688,55 +738,6 @@ export default function Home() {
               </div>
             )}
 
-            {session && (
-              <div style={cardStyle}>
-                <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>
-                  Profile Setup
-                </h2>
-
-                <div style={{ display: "grid", gap: 12 }}>
-                  <div>
-                    <p style={labelStyle}>Name</p>
-                    <input
-                      style={inputStyle}
-                      placeholder="Your full name"
-                      value={profileName}
-                      onChange={(e) => setProfileName(e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <p style={labelStyle}>Phone</p>
-                    <input
-                      style={inputStyle}
-                      placeholder="Phone with country code, e.g. +255712345678"
-                      value={profilePhone}
-                      onChange={(e) => setProfilePhone(e.target.value)}
-                    />
-                    <p style={{ margin: "8px 0 0", fontSize: 13, color: "#64748b" }}>
-                      Local number? Just type 07... and the app will convert it.
-                    </p>
-                  </div>
-
-                  <button
-                    style={{
-                      ...primaryButton,
-                      opacity: savingProfile ? 0.7 : 1,
-                      cursor: savingProfile ? "not-allowed" : "pointer",
-                    }}
-                    onClick={saveProfile}
-                    disabled={savingProfile}
-                  >
-                    {savingProfile ? "Saving..." : "Save Profile"}
-                  </button>
-
-                  <button style={darkButton} onClick={logout}>
-                    Logout
-                  </button>
-                </div>
-              </div>
-            )}
-
             <div style={cardStyle}>
               <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>Create Offer</h2>
 
@@ -754,7 +755,9 @@ export default function Home() {
                     <p style={{ margin: 0, color: "#475569", fontSize: 14 }}>
                       Posting as <strong>{profile?.name || "No profile name"}</strong>
                     </p>
-                    <p style={{ margin: "6px 0 0", color: "#475569", fontSize: 14 }}>
+                    <p
+                      style={{ margin: "6px 0 0", color: "#475569", fontSize: 14 }}
+                    >
                       Phone: <strong>{profile?.phone || "No profile phone"}</strong>
                     </p>
                   </div>
@@ -865,203 +868,10 @@ export default function Home() {
                 </p>
               )}
             </div>
-
-            {editingOfferId && (
-              <div style={cardStyle}>
-                <h2 style={{ margin: "0 0 16px", fontSize: 28 }}>Edit Offer</h2>
-
-                <div style={{ display: "grid", gap: 12 }}>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 12,
-                    }}
-                  >
-                    <div>
-                      <p style={labelStyle}>From</p>
-                      <select
-                        style={inputStyle}
-                        value={editFromCurrency}
-                        onChange={(e) => setEditFromCurrency(e.target.value)}
-                      >
-                        <option>TZS</option>
-                        <option>GBP</option>
-                        <option>USD</option>
-                        <option>EUR</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <p style={labelStyle}>To</p>
-                      <select
-                        style={inputStyle}
-                        value={editToCurrency}
-                        onChange={(e) => setEditToCurrency(e.target.value)}
-                      >
-                        <option>GBP</option>
-                        <option>TZS</option>
-                        <option>USD</option>
-                        <option>EUR</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p style={labelStyle}>Rate</p>
-                    <input
-                      style={inputStyle}
-                      type="number"
-                      value={editRate}
-                      onChange={(e) => setEditRate(e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <p style={labelStyle}>Amount</p>
-                    <input
-                      style={inputStyle}
-                      type="number"
-                      value={editAmount}
-                      onChange={(e) => setEditAmount(e.target.value)}
-                    />
-                  </div>
-
-                  <div
-                    style={{
-                      background: "linear-gradient(135deg, #eef2ff, #f8fafc)",
-                      border: "1px solid #c7d2fe",
-                      borderRadius: 16,
-                      padding: 16,
-                      color: "#312e81",
-                    }}
-                  >
-                    <p
-                      style={{
-                        margin: "0 0 8px",
-                        fontSize: 12,
-                        fontWeight: 700,
-                        letterSpacing: 0.6,
-                        textTransform: "uppercase",
-                        color: "#4338ca",
-                      }}
-                    >
-                      Edit Preview
-                    </p>
-
-                    <p style={{ margin: 0, fontWeight: 800, fontSize: 20 }}>
-                      {Number(editAmount || 0)} {editFromCurrency} →{" "}
-                      {editPreviewTotal.toFixed(2)} {editToCurrency}
-                    </p>
-                  </div>
-
-                  <div style={{ display: "flex", gap: 10 }}>
-                    <button
-                      style={{
-                        ...primaryButton,
-                        opacity: updatingOffer ? 0.7 : 1,
-                        cursor: updatingOffer ? "not-allowed" : "pointer",
-                      }}
-                      onClick={updateOffer}
-                      disabled={updatingOffer}
-                    >
-                      {updatingOffer ? "Updating..." : "Save Changes"}
-                    </button>
-
-                    <button style={secondaryButton} onClick={cancelEditOffer}>
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {session && (
-              <div style={cardStyle}>
-                <h2 style={{ margin: "0 0 16px", fontSize: 28 }}>My Offers</h2>
-
-                {myOffers.length === 0 ? (
-                  <div
-                    style={{
-                      border: "1px dashed #d1d5db",
-                      borderRadius: 16,
-                      padding: 20,
-                      color: "#6b7280",
-                      background: "#f9fafb",
-                    }}
-                  >
-                    You have not posted any offers yet.
-                  </div>
-                ) : (
-                  <div style={{ display: "grid", gap: 12 }}>
-                    {myOffers.map((offer) => {
-                      const total = calculateConvertedAmount(
-                        offer.amount,
-                        offer.rate,
-                        offer.from_currency,
-                        offer.to_currency
-                      );
-
-                      return (
-                        <div
-                          key={offer.id}
-                          style={{
-                            border: "1px solid #e5e7eb",
-                            borderRadius: 16,
-                            padding: 16,
-                            background: "#f9fafb",
-                          }}
-                        >
-                          <p
-                            style={{
-                              margin: "0 0 8px",
-                              fontWeight: 800,
-                              fontSize: 20,
-                              color: "#111827",
-                            }}
-                          >
-                            {offer.name}
-                          </p>
-
-                          <p style={{ margin: "6px 0", color: "#374151" }}>
-                            {offer.amount.toLocaleString()} {offer.from_currency} →{" "}
-                            {total.toFixed(2)} {offer.to_currency}
-                          </p>
-
-                          <p style={{ margin: "6px 0", color: "#374151" }}>
-                            Rate: {offer.rate}
-                          </p>
-
-                          <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-                            <button
-                              style={smallButton}
-                              onClick={() => startEditOffer(offer)}
-                            >
-                              Edit
-                            </button>
-
-                            <button
-                              style={{
-                                ...dangerButton,
-                                opacity: deletingId === offer.id ? 0.7 : 1,
-                                cursor:
-                                  deletingId === offer.id ? "not-allowed" : "pointer",
-                              }}
-                              onClick={() => deleteOffer(offer.id)}
-                              disabled={deletingId === offer.id}
-                            >
-                              {deletingId === offer.id ? "Deleting..." : "Delete"}
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
+        )}
 
+        {activeTab === "market" && (
           <div style={cardStyle}>
             <div
               style={{
@@ -1348,7 +1158,274 @@ export default function Home() {
               </div>
             )}
           </div>
-        </div>
+        )}
+
+        {activeTab === "profile" && (
+          <div style={{ display: "grid", gap: 20 }}>
+            {session ? (
+              <>
+                <div style={cardStyle}>
+                  <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>
+                    Profile Setup
+                  </h2>
+
+                  <div style={{ display: "grid", gap: 12 }}>
+                    <div>
+                      <p style={labelStyle}>Name</p>
+                      <input
+                        style={inputStyle}
+                        placeholder="Your full name"
+                        value={profileName}
+                        onChange={(e) => setProfileName(e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <p style={labelStyle}>Phone</p>
+                      <input
+                        style={inputStyle}
+                        placeholder="Phone with country code, e.g. +255712345678"
+                        value={profilePhone}
+                        onChange={(e) => setProfilePhone(e.target.value)}
+                      />
+                      <p
+                        style={{
+                          margin: "8px 0 0",
+                          fontSize: 13,
+                          color: "#64748b",
+                        }}
+                      >
+                        Local number? Just type 07... and the app will convert it.
+                      </p>
+                    </div>
+
+                    <button
+                      style={{
+                        ...primaryButton,
+                        opacity: savingProfile ? 0.7 : 1,
+                        cursor: savingProfile ? "not-allowed" : "pointer",
+                      }}
+                      onClick={saveProfile}
+                      disabled={savingProfile}
+                    >
+                      {savingProfile ? "Saving..." : "Save Profile"}
+                    </button>
+
+                    <button style={darkButton} onClick={logout}>
+                      Logout
+                    </button>
+                  </div>
+                </div>
+
+                {editingOfferId && (
+                  <div style={cardStyle}>
+                    <h2 style={{ margin: "0 0 16px", fontSize: 28 }}>
+                      Edit Offer
+                    </h2>
+
+                    <div style={{ display: "grid", gap: 12 }}>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: 12,
+                        }}
+                      >
+                        <div>
+                          <p style={labelStyle}>From</p>
+                          <select
+                            style={inputStyle}
+                            value={editFromCurrency}
+                            onChange={(e) => setEditFromCurrency(e.target.value)}
+                          >
+                            <option>TZS</option>
+                            <option>GBP</option>
+                            <option>USD</option>
+                            <option>EUR</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <p style={labelStyle}>To</p>
+                          <select
+                            style={inputStyle}
+                            value={editToCurrency}
+                            onChange={(e) => setEditToCurrency(e.target.value)}
+                          >
+                            <option>GBP</option>
+                            <option>TZS</option>
+                            <option>USD</option>
+                            <option>EUR</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p style={labelStyle}>Rate</p>
+                        <input
+                          style={inputStyle}
+                          type="number"
+                          value={editRate}
+                          onChange={(e) => setEditRate(e.target.value)}
+                        />
+                      </div>
+
+                      <div>
+                        <p style={labelStyle}>Amount</p>
+                        <input
+                          style={inputStyle}
+                          type="number"
+                          value={editAmount}
+                          onChange={(e) => setEditAmount(e.target.value)}
+                        />
+                      </div>
+
+                      <div
+                        style={{
+                          background: "linear-gradient(135deg, #eef2ff, #f8fafc)",
+                          border: "1px solid #c7d2fe",
+                          borderRadius: 16,
+                          padding: 16,
+                          color: "#312e81",
+                        }}
+                      >
+                        <p
+                          style={{
+                            margin: "0 0 8px",
+                            fontSize: 12,
+                            fontWeight: 700,
+                            letterSpacing: 0.6,
+                            textTransform: "uppercase",
+                            color: "#4338ca",
+                          }}
+                        >
+                          Edit Preview
+                        </p>
+
+                        <p style={{ margin: 0, fontWeight: 800, fontSize: 20 }}>
+                          {Number(editAmount || 0)} {editFromCurrency} →{" "}
+                          {editPreviewTotal.toFixed(2)} {editToCurrency}
+                        </p>
+                      </div>
+
+                      <div style={{ display: "flex", gap: 10 }}>
+                        <button
+                          style={{
+                            ...primaryButton,
+                            opacity: updatingOffer ? 0.7 : 1,
+                            cursor: updatingOffer ? "not-allowed" : "pointer",
+                          }}
+                          onClick={updateOffer}
+                          disabled={updatingOffer}
+                        >
+                          {updatingOffer ? "Updating..." : "Save Changes"}
+                        </button>
+
+                        <button style={secondaryButton} onClick={cancelEditOffer}>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div style={cardStyle}>
+                  <h2 style={{ margin: "0 0 16px", fontSize: 28 }}>My Offers</h2>
+
+                  {myOffers.length === 0 ? (
+                    <div
+                      style={{
+                        border: "1px dashed #d1d5db",
+                        borderRadius: 16,
+                        padding: 20,
+                        color: "#6b7280",
+                        background: "#f9fafb",
+                      }}
+                    >
+                      You have not posted any offers yet.
+                    </div>
+                  ) : (
+                    <div style={{ display: "grid", gap: 12 }}>
+                      {myOffers.map((offer) => {
+                        const total = calculateConvertedAmount(
+                          offer.amount,
+                          offer.rate,
+                          offer.from_currency,
+                          offer.to_currency
+                        );
+
+                        return (
+                          <div
+                            key={offer.id}
+                            style={{
+                              border: "1px solid #e5e7eb",
+                              borderRadius: 16,
+                              padding: 16,
+                              background: "#f9fafb",
+                            }}
+                          >
+                            <p
+                              style={{
+                                margin: "0 0 8px",
+                                fontWeight: 800,
+                                fontSize: 20,
+                                color: "#111827",
+                              }}
+                            >
+                              {offer.name}
+                            </p>
+
+                            <p style={{ margin: "6px 0", color: "#374151" }}>
+                              {offer.amount.toLocaleString()} {offer.from_currency} →{" "}
+                              {total.toFixed(2)} {offer.to_currency}
+                            </p>
+
+                            <p style={{ margin: "6px 0", color: "#374151" }}>
+                              Rate: {offer.rate}
+                            </p>
+
+                            <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+                              <button
+                                style={smallButton}
+                                onClick={() => startEditOffer(offer)}
+                              >
+                                Edit
+                              </button>
+
+                              <button
+                                style={{
+                                  ...dangerButton,
+                                  opacity: deletingId === offer.id ? 0.7 : 1,
+                                  cursor:
+                                    deletingId === offer.id
+                                      ? "not-allowed"
+                                      : "pointer",
+                                }}
+                                onClick={() => deleteOffer(offer.id)}
+                                disabled={deletingId === offer.id}
+                              >
+                                {deletingId === offer.id ? "Deleting..." : "Delete"}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div style={cardStyle}>
+                <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>
+                  Login Required
+                </h2>
+                <p style={{ margin: 0, color: "#64748b" }}>
+                  Log in first to manage your profile and offers.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </main>
   );
