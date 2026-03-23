@@ -50,6 +50,13 @@ export default function Home() {
   const [posting, setPosting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const [editingOfferId, setEditingOfferId] = useState<string | null>(null);
+  const [editFromCurrency, setEditFromCurrency] = useState("TZS");
+  const [editToCurrency, setEditToCurrency] = useState("GBP");
+  const [editRate, setEditRate] = useState("3600");
+  const [editAmount, setEditAmount] = useState("");
+  const [updatingOffer, setUpdatingOffer] = useState(false);
+
   const [search, setSearch] = useState("");
   const [filterFrom, setFilterFrom] = useState("ALL");
   const [filterTo, setFilterTo] = useState("ALL");
@@ -81,6 +88,26 @@ export default function Home() {
     }
 
     return cleanedPhone;
+  }
+
+  function calculateConvertedAmount(
+    rawAmount: number,
+    rawRate: number,
+    from: string,
+    to: string
+  ) {
+    if (!rawAmount || !rawRate) return 0;
+
+    if (from === "TZS" && to === "GBP") return rawAmount / rawRate;
+    if (from === "GBP" && to === "TZS") return rawAmount * rawRate;
+
+    if (from === "TZS" && to === "USD") return rawAmount / rawRate;
+    if (from === "USD" && to === "TZS") return rawAmount * rawRate;
+
+    if (from === "TZS" && to === "EUR") return rawAmount / rawRate;
+    if (from === "EUR" && to === "TZS") return rawAmount * rawRate;
+
+    return rawAmount * rawRate;
   }
 
   useEffect(() => {
@@ -236,31 +263,18 @@ export default function Home() {
   const numRate = Number(rate || 0);
   const numAmount = Number(amount || 0);
 
-  function calculateConvertedAmount(
-    rawAmount: number,
-    rawRate: number,
-    from: string,
-    to: string
-  ) {
-    if (!rawAmount || !rawRate) return 0;
-
-    if (from === "TZS" && to === "GBP") return rawAmount / rawRate;
-    if (from === "GBP" && to === "TZS") return rawAmount * rawRate;
-
-    if (from === "TZS" && to === "USD") return rawAmount / rawRate;
-    if (from === "USD" && to === "TZS") return rawAmount * rawRate;
-
-    if (from === "TZS" && to === "EUR") return rawAmount / rawRate;
-    if (from === "EUR" && to === "TZS") return rawAmount * rawRate;
-
-    return rawAmount * rawRate;
-  }
-
   const previewTotal = calculateConvertedAmount(
     numAmount,
     numRate,
     fromCurrency,
     toCurrency
+  );
+
+  const editPreviewTotal = calculateConvertedAmount(
+    Number(editAmount || 0),
+    Number(editRate || 0),
+    editFromCurrency,
+    editToCurrency
   );
 
   async function postOffer() {
@@ -306,6 +320,58 @@ export default function Home() {
     setRate("3600");
     await fetchOffers();
     showNotice("success", "Offer posted successfully");
+  }
+
+  function startEditOffer(offer: Offer) {
+    setEditingOfferId(offer.id);
+    setEditFromCurrency(offer.from_currency);
+    setEditToCurrency(offer.to_currency);
+    setEditRate(String(offer.rate));
+    setEditAmount(String(offer.amount));
+  }
+
+  function cancelEditOffer() {
+    setEditingOfferId(null);
+    setEditFromCurrency("TZS");
+    setEditToCurrency("GBP");
+    setEditRate("3600");
+    setEditAmount("");
+  }
+
+  async function updateOffer() {
+    if (!editingOfferId) return;
+
+    const editRateNum = Number(editRate || 0);
+    const editAmountNum = Number(editAmount || 0);
+
+    if (!editRateNum || !editAmountNum) {
+      showNotice("error", "Enter amount and rate");
+      return;
+    }
+
+    setUpdatingOffer(true);
+
+    const { error } = await supabase
+      .from("offers")
+      .update({
+        from_currency: editFromCurrency,
+        to_currency: editToCurrency,
+        rate: editRateNum,
+        amount: editAmountNum,
+      })
+      .eq("id", editingOfferId);
+
+    setUpdatingOffer(false);
+
+    if (error) {
+      console.error(error);
+      showNotice("error", "Failed to update offer");
+      return;
+    }
+
+    await fetchOffers();
+    cancelEditOffer();
+    showNotice("success", "Offer updated successfully");
   }
 
   async function deleteOffer(offerId: string) {
@@ -430,6 +496,37 @@ export default function Home() {
     border: "none",
     borderRadius: 14,
     background: "#0f172a",
+    color: "#ffffff",
+    fontWeight: 700,
+    cursor: "pointer",
+  };
+
+  const secondaryButton: React.CSSProperties = {
+    width: "100%",
+    padding: "13px 18px",
+    border: "1px solid #cbd5e1",
+    borderRadius: 14,
+    background: "#ffffff",
+    color: "#0f172a",
+    fontWeight: 700,
+    cursor: "pointer",
+  };
+
+  const smallButton: React.CSSProperties = {
+    padding: "10px 14px",
+    border: "none",
+    borderRadius: 12,
+    background: "#0f172a",
+    color: "#ffffff",
+    fontWeight: 700,
+    cursor: "pointer",
+  };
+
+  const dangerButton: React.CSSProperties = {
+    padding: "10px 14px",
+    border: "none",
+    borderRadius: 12,
+    background: "#dc2626",
     color: "#ffffff",
     fontWeight: 700,
     cursor: "pointer",
@@ -744,6 +841,107 @@ export default function Home() {
               )}
             </div>
 
+            {editingOfferId && (
+              <div style={cardStyle}>
+                <h2 style={{ margin: "0 0 16px", fontSize: 28 }}>Edit Offer</h2>
+
+                <div style={{ display: "grid", gap: 12 }}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 12,
+                    }}
+                  >
+                    <div>
+                      <p style={labelStyle}>From</p>
+                      <select
+                        style={inputStyle}
+                        value={editFromCurrency}
+                        onChange={(e) => setEditFromCurrency(e.target.value)}
+                      >
+                        <option>TZS</option>
+                        <option>GBP</option>
+                        <option>USD</option>
+                        <option>EUR</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <p style={labelStyle}>To</p>
+                      <select
+                        style={inputStyle}
+                        value={editToCurrency}
+                        onChange={(e) => setEditToCurrency(e.target.value)}
+                      >
+                        <option>GBP</option>
+                        <option>TZS</option>
+                        <option>USD</option>
+                        <option>EUR</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p style={labelStyle}>Rate</p>
+                    <input
+                      style={inputStyle}
+                      type="number"
+                      value={editRate}
+                      onChange={(e) => setEditRate(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <p style={labelStyle}>Amount</p>
+                    <input
+                      style={inputStyle}
+                      type="number"
+                      value={editAmount}
+                      onChange={(e) => setEditAmount(e.target.value)}
+                    />
+                  </div>
+
+                  <div
+                    style={{
+                      background: "linear-gradient(135deg, #eef2ff, #f8fafc)",
+                      border: "1px solid #c7d2fe",
+                      borderRadius: 16,
+                      padding: 16,
+                      color: "#312e81",
+                    }}
+                  >
+                    <p
+                      style={{
+                        margin: "0 0 8px",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        letterSpacing: 0.6,
+                        textTransform: "uppercase",
+                        color: "#4338ca",
+                      }}
+                    >
+                      Edit Preview
+                    </p>
+
+                    <p style={{ margin: 0, fontWeight: 800, fontSize: 20 }}>
+                      {Number(editAmount || 0)} {editFromCurrency} →{" "}
+                      {editPreviewTotal.toFixed(2)} {editToCurrency}
+                    </p>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button style={primaryButton} onClick={updateOffer}>
+                      {updatingOffer ? "Updating..." : "Save Changes"}
+                    </button>
+                    <button style={secondaryButton} onClick={cancelEditOffer}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {session && (
               <div style={cardStyle}>
                 <h2 style={{ margin: "0 0 16px", fontSize: 28 }}>My Offers</h2>
@@ -800,16 +998,21 @@ export default function Home() {
                             Rate: {offer.rate}
                           </p>
 
-                          <button
-                            style={{
-                              ...darkButton,
-                              background: "#dc2626",
-                              marginTop: 8,
-                            }}
-                            onClick={() => deleteOffer(offer.id)}
-                          >
-                            {deletingId === offer.id ? "Deleting..." : "Delete"}
-                          </button>
+                          <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+                            <button
+                              style={smallButton}
+                              onClick={() => startEditOffer(offer)}
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              style={dangerButton}
+                              onClick={() => deleteOffer(offer.id)}
+                            >
+                              {deletingId === offer.id ? "Deleting..." : "Delete"}
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
