@@ -103,7 +103,7 @@ export default function Home() {
     const cleaned = normalizePhone(phone);
 
     if (cleaned.startsWith("+255") && cleaned.length >= 10) {
-      return `${cleaned.slice(0, 8)} *** ***`;
+      return `${cleaned.slice(0, 7)} *** ***`;
     }
 
     if (cleaned.startsWith("+44") && cleaned.length >= 8) {
@@ -218,12 +218,14 @@ export default function Home() {
         return;
       }
 
+      setEmail("");
+      setPassword("");
       showNotice("success", "Account created. Now log in.");
       setAuthMode("login");
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -235,11 +237,19 @@ export default function Home() {
       return;
     }
 
+    setSession(data.session);
+    setEmail("");
+    setPassword("");
+    setActiveTab("market");
     showNotice("success", "Login successful");
   }
 
   async function logout() {
     await supabase.auth.signOut();
+    setSession(null);
+    setEmail("");
+    setPassword("");
+    setActiveTab("home");
     showNotice("success", "Logged out");
   }
 
@@ -268,6 +278,7 @@ export default function Home() {
       email: session.user.email,
       name: profileName.trim(),
       phone: cleanedPhone,
+      coins: profile?.coins ?? 0,
     };
 
     const { error } = await supabase.from("profiles").upsert(payload);
@@ -404,7 +415,8 @@ export default function Home() {
         rate: editRateNum,
         amount: editAmountNum,
       })
-      .eq("id", editingOfferId);
+      .eq("id", editingOfferId)
+      .eq("user_id", session?.user?.id);
 
     setUpdatingOffer(false);
 
@@ -426,7 +438,11 @@ export default function Home() {
 
     setDeletingId(offerId);
 
-    const { error } = await supabase.from("offers").delete().eq("id", offerId);
+    const { error } = await supabase
+      .from("offers")
+      .delete()
+      .eq("id", offerId)
+      .eq("user_id", session?.user?.id);
 
     setDeletingId(null);
 
@@ -495,7 +511,7 @@ export default function Home() {
 
     if (updateProfileError) {
       console.error(updateProfileError);
-      showNotice("error", "Contact saved, but failed to update coins");
+      showNotice("error", "Contact unlocked, but failed to update coins");
       await fetchUnlockedContacts(session.user.id);
       return;
     }
@@ -771,9 +787,7 @@ export default function Home() {
                     <p style={{ margin: 0, opacity: 0.75, fontSize: 13 }}>
                       Live Offers
                     </p>
-                    <p
-                      style={{ margin: "8px 0 0", fontWeight: 800, fontSize: 24 }}
-                    >
+                    <p style={{ margin: "8px 0 0", fontWeight: 800, fontSize: 24 }}>
                       {offers.length}
                     </p>
                   </div>
@@ -782,20 +796,14 @@ export default function Home() {
                     <p style={{ margin: 0, opacity: 0.75, fontSize: 13 }}>
                       My Offers
                     </p>
-                    <p
-                      style={{ margin: "8px 0 0", fontWeight: 800, fontSize: 24 }}
-                    >
+                    <p style={{ margin: "8px 0 0", fontWeight: 800, fontSize: 24 }}>
                       {myOffers.length}
                     </p>
                   </div>
 
                   <div style={statBox}>
-                    <p style={{ margin: 0, opacity: 0.75, fontSize: 13 }}>
-                      Coins
-                    </p>
-                    <p
-                      style={{ margin: "8px 0 0", fontWeight: 800, fontSize: 24 }}
-                    >
+                    <p style={{ margin: 0, opacity: 0.75, fontSize: 13 }}>Coins</p>
+                    <p style={{ margin: "8px 0 0", fontWeight: 800, fontSize: 24 }}>
                       {session ? Number(profile?.coins || 0) : "-"}
                     </p>
                   </div>
@@ -805,9 +813,7 @@ export default function Home() {
 
             {!session && (
               <div style={cardStyle}>
-                <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>
-                  Authentication
-                </h2>
+                <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>Authentication</h2>
 
                 <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
                   <button
@@ -876,9 +882,7 @@ export default function Home() {
                     <p style={{ margin: 0, color: "#475569", fontSize: 14 }}>
                       Posting as <strong>{profile?.name || "No profile name"}</strong>
                     </p>
-                    <p
-                      style={{ margin: "6px 0 0", color: "#475569", fontSize: 14 }}
-                    >
+                    <p style={{ margin: "6px 0 0", color: "#475569", fontSize: 14 }}>
                       Phone: <strong>{profile?.phone || "No profile phone"}</strong>
                     </p>
                   </div>
@@ -965,8 +969,7 @@ export default function Home() {
                       </p>
 
                       <p style={{ margin: 0, fontWeight: 800, fontSize: 20 }}>
-                        {numAmount} {fromCurrency} → {previewTotal.toFixed(2)}{" "}
-                        {toCurrency}
+                        {numAmount} {fromCurrency} → {previewTotal.toFixed(2)} {toCurrency}
                       </p>
                     </div>
 
@@ -1007,8 +1010,7 @@ export default function Home() {
               <div>
                 <h2 style={{ margin: 0, fontSize: 32 }}>Marketplace</h2>
                 <p style={{ margin: "6px 0 0", color: "#6b7280" }}>
-                  {filteredOffers.length} live offer
-                  {filteredOffers.length === 1 ? "" : "s"}
+                  {filteredOffers.length} live offer{filteredOffers.length === 1 ? "" : "s"}
                 </p>
               </div>
 
@@ -1182,13 +1184,7 @@ export default function Home() {
                               }}
                             >
                               <p style={labelStyle}>Amount</p>
-                              <p
-                                style={{
-                                  margin: "8px 0 0",
-                                  fontWeight: 800,
-                                  color: "#0f172a",
-                                }}
-                              >
+                              <p style={{ margin: "8px 0 0", fontWeight: 800, color: "#0f172a" }}>
                                 {offer.amount.toLocaleString()} {offer.from_currency}
                               </p>
                             </div>
@@ -1202,13 +1198,7 @@ export default function Home() {
                               }}
                             >
                               <p style={labelStyle}>Total</p>
-                              <p
-                                style={{
-                                  margin: "8px 0 0",
-                                  fontWeight: 800,
-                                  color: "#0f172a",
-                                }}
-                              >
+                              <p style={{ margin: "8px 0 0", fontWeight: 800, color: "#0f172a" }}>
                                 {total.toFixed(2)} {offer.to_currency}
                               </p>
                             </div>
@@ -1222,13 +1212,7 @@ export default function Home() {
                               }}
                             >
                               <p style={labelStyle}>Rate</p>
-                              <p
-                                style={{
-                                  margin: "8px 0 0",
-                                  fontWeight: 800,
-                                  color: "#0f172a",
-                                }}
-                              >
+                              <p style={{ margin: "8px 0 0", fontWeight: 800, color: "#0f172a" }}>
                                 {offer.rate}
                               </p>
                             </div>
@@ -1281,10 +1265,7 @@ export default function Home() {
                                   border: "none",
                                   background: "#dc2626",
                                   color: "#fff",
-                                  cursor:
-                                    deletingId === offer.id
-                                      ? "not-allowed"
-                                      : "pointer",
+                                  cursor: deletingId === offer.id ? "not-allowed" : "pointer",
                                   opacity: deletingId === offer.id ? 0.7 : 1,
                                   fontSize: 13,
                                   fontWeight: 700,
@@ -1299,10 +1280,7 @@ export default function Home() {
                         <div style={{ display: "grid", gap: 10 }}>
                           {canSeeFullContact ? (
                             <a
-                              href={`https://wa.me/${String(offer.phone).replace(
-                                /\D/g,
-                                ""
-                              )}?text=${message}`}
+                              href={`https://wa.me/${String(offer.phone).replace(/\D/g, "")}?text=${message}`}
                               target="_blank"
                               rel="noreferrer"
                               style={{
@@ -1349,10 +1327,7 @@ export default function Home() {
                                 borderRadius: 14,
                                 border: "none",
                                 fontWeight: 800,
-                                cursor:
-                                  unlockingId === offer.id
-                                    ? "not-allowed"
-                                    : "pointer",
+                                cursor: unlockingId === offer.id ? "not-allowed" : "pointer",
                                 opacity: unlockingId === offer.id ? 0.7 : 1,
                                 whiteSpace: "nowrap",
                               }}
@@ -1396,9 +1371,7 @@ export default function Home() {
             {session ? (
               <>
                 <div style={cardStyle}>
-                  <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>
-                    Profile Setup
-                  </h2>
+                  <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>Profile Setup</h2>
 
                   <div
                     style={{
@@ -1413,8 +1386,7 @@ export default function Home() {
                       Coins Balance: {Number(profile?.coins || 0)}
                     </p>
                     <p style={{ margin: "6px 0 0", color: "#475569", fontSize: 14 }}>
-                      For now, add coins manually in Supabase Table Editor to test
-                      unlocks.
+                      For now, add coins manually in Supabase Table Editor to test unlocks.
                     </p>
                   </div>
 
@@ -1437,13 +1409,7 @@ export default function Home() {
                         value={profilePhone}
                         onChange={(e) => setProfilePhone(e.target.value)}
                       />
-                      <p
-                        style={{
-                          margin: "8px 0 0",
-                          fontSize: 13,
-                          color: "#64748b",
-                        }}
-                      >
+                      <p style={{ margin: "8px 0 0", fontSize: 13, color: "#64748b" }}>
                         Local number? Just type 07... and the app will convert it.
                       </p>
                     </div>
@@ -1468,9 +1434,7 @@ export default function Home() {
 
                 {editingOfferId && (
                   <div style={cardStyle}>
-                    <h2 style={{ margin: "0 0 16px", fontSize: 28 }}>
-                      Edit Offer
-                    </h2>
+                    <h2 style={{ margin: "0 0 16px", fontSize: 28 }}>Edit Offer</h2>
 
                     <div style={{ display: "grid", gap: 12 }}>
                       <div
@@ -1552,8 +1516,7 @@ export default function Home() {
                         </p>
 
                         <p style={{ margin: 0, fontWeight: 800, fontSize: 20 }}>
-                          {Number(editAmount || 0)} {editFromCurrency} →{" "}
-                          {editPreviewTotal.toFixed(2)} {editToCurrency}
+                          {Number(editAmount || 0)} {editFromCurrency} → {editPreviewTotal.toFixed(2)} {editToCurrency}
                         </p>
                       </div>
 
@@ -1625,8 +1588,7 @@ export default function Home() {
                             </p>
 
                             <p style={{ margin: "6px 0", color: "#374151" }}>
-                              {offer.amount.toLocaleString()} {offer.from_currency} →{" "}
-                              {total.toFixed(2)} {offer.to_currency}
+                              {offer.amount.toLocaleString()} {offer.from_currency} → {total.toFixed(2)} {offer.to_currency}
                             </p>
 
                             <p style={{ margin: "6px 0", color: "#374151" }}>
@@ -1645,10 +1607,7 @@ export default function Home() {
                                 style={{
                                   ...dangerButton,
                                   opacity: deletingId === offer.id ? 0.7 : 1,
-                                  cursor:
-                                    deletingId === offer.id
-                                      ? "not-allowed"
-                                      : "pointer",
+                                  cursor: deletingId === offer.id ? "not-allowed" : "pointer",
                                 }}
                                 onClick={() => deleteOffer(offer.id)}
                                 disabled={deletingId === offer.id}
@@ -1665,9 +1624,7 @@ export default function Home() {
               </>
             ) : (
               <div style={cardStyle}>
-                <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>
-                  Login Required
-                </h2>
+                <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>Login Required</h2>
                 <p style={{ margin: 0, color: "#64748b" }}>
                   Log in first to manage your profile, coins, and offers.
                 </p>
