@@ -29,10 +29,10 @@ type Notice = {
   text: string;
 } | null;
 
+type Tab = "home" | "market" | "listings" | "contacts" | "profile";
+
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<"home" | "market" | "profile">(
-    "home"
-  );
+  const [activeTab, setActiveTab] = useState<Tab>("home");
 
   const [session, setSession] = useState<any>(null);
 
@@ -220,7 +220,10 @@ export default function Home() {
 
       setEmail("");
       setPassword("");
-      showNotice("success", "Account created. Now log in.");
+      showNotice(
+        "success",
+        "Account created. Check your email if confirmation is enabled, then log in."
+      );
       setAuthMode("login");
       return;
     }
@@ -233,7 +236,11 @@ export default function Home() {
     setAuthLoading(false);
 
     if (error) {
-      showNotice("error", "Invalid login credentials");
+      showNotice(
+        "error",
+        error.message ||
+          "Login failed. Check your email/password or confirm your email first."
+      );
       return;
     }
 
@@ -373,7 +380,6 @@ export default function Home() {
     setRate("3600");
     await fetchOffers();
     showNotice("success", "Offer posted successfully");
-    setActiveTab("market");
   }
 
   function startEditOffer(offer: Offer) {
@@ -382,7 +388,7 @@ export default function Home() {
     setEditToCurrency(offer.to_currency);
     setEditRate(String(offer.rate));
     setEditAmount(String(offer.amount));
-    setActiveTab("profile");
+    setActiveTab("listings");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -429,7 +435,6 @@ export default function Home() {
     await fetchOffers();
     cancelEditOffer();
     showNotice("success", "Offer updated successfully");
-    setActiveTab("market");
   }
 
   async function deleteOffer(offerId: string) {
@@ -544,6 +549,14 @@ export default function Home() {
     if (!session?.user?.id) return [];
     return offers.filter((offer) => offer.user_id === session.user.id);
   }, [offers, session]);
+
+  const unlockedOffers = useMemo(() => {
+    if (!session?.user?.id) return [];
+    return offers.filter(
+      (offer) =>
+        unlockedOfferIds.includes(offer.id) && offer.user_id !== session.user.id
+    );
+  }, [offers, unlockedOfferIds, session]);
 
   const pageStyle: React.CSSProperties = {
     minHeight: "100vh",
@@ -681,9 +694,7 @@ export default function Home() {
     return "New Seller";
   };
 
-  const tabButtonStyle = (
-    tab: "home" | "market" | "profile"
-  ): React.CSSProperties => ({
+  const tabButtonStyle = (tab: Tab): React.CSSProperties => ({
     padding: "12px 18px",
     borderRadius: 14,
     border: "1px solid",
@@ -720,11 +731,20 @@ export default function Home() {
           <button style={tabButtonStyle("home")} onClick={() => setActiveTab("home")}>
             Home
           </button>
-          <button
-            style={tabButtonStyle("market")}
-            onClick={() => setActiveTab("market")}
-          >
+          <button style={tabButtonStyle("market")} onClick={() => setActiveTab("market")}>
             Marketplace
+          </button>
+          <button
+            style={tabButtonStyle("listings")}
+            onClick={() => setActiveTab("listings")}
+          >
+            My Listings
+          </button>
+          <button
+            style={tabButtonStyle("contacts")}
+            onClick={() => setActiveTab("contacts")}
+          >
+            Contacts
           </button>
           <button
             style={tabButtonStyle("profile")}
@@ -745,7 +765,7 @@ export default function Home() {
                   flexWrap: "wrap",
                 }}
               >
-                <div style={{ maxWidth: 700 }}>
+                <div style={{ maxWidth: 720 }}>
                   <p
                     style={{
                       margin: 0,
@@ -756,7 +776,7 @@ export default function Home() {
                       fontWeight: 700,
                     }}
                   >
-                    Live Marketplace
+                    Secure FX Discovery
                   </p>
 
                   <h1
@@ -777,8 +797,9 @@ export default function Home() {
                       color: "rgba(255,255,255,0.88)",
                     }}
                   >
-                    Public marketplace for live offers. Login and use coins to
-                    unlock seller contact details.
+                    Discover live foreign exchange offers, unlock verified seller
+                    contacts with coins, and manage your own listings in one
+                    clean marketplace.
                   </p>
                 </div>
 
@@ -794,7 +815,7 @@ export default function Home() {
 
                   <div style={statBox}>
                     <p style={{ margin: 0, opacity: 0.75, fontSize: 13 }}>
-                      My Offers
+                      My Listings
                     </p>
                     <p style={{ margin: "8px 0 0", fontWeight: 800, fontSize: 24 }}>
                       {myOffers.length}
@@ -811,9 +832,49 @@ export default function Home() {
               </div>
             </div>
 
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+                gap: 18,
+              }}
+            >
+              <div style={cardStyle}>
+                <h2 style={{ margin: "0 0 10px", fontSize: 26 }}>How it works</h2>
+                <div style={{ display: "grid", gap: 10, color: "#475569" }}>
+                  <p style={{ margin: 0 }}>1. Browse live FX offers in the marketplace.</p>
+                  <p style={{ margin: 0 }}>
+                    2. Unlock seller contact details using coins.
+                  </p>
+                  <p style={{ margin: 0 }}>
+                    3. Chat directly and complete your exchange securely.
+                  </p>
+                </div>
+              </div>
+
+              <div style={cardStyle}>
+                <h2 style={{ margin: "0 0 10px", fontSize: 26 }}>Why use it</h2>
+                <div style={{ display: "grid", gap: 10, color: "#475569" }}>
+                  <p style={{ margin: 0 }}>• Public marketplace with live listings</p>
+                  <p style={{ margin: 0 }}>• Seller trust badges and clear rates</p>
+                  <p style={{ margin: 0 }}>• Contact protection until unlock</p>
+                  <p style={{ margin: 0 }}>• Dedicated listings and contacts pages</p>
+                </div>
+              </div>
+
+              <div style={cardStyle}>
+                <h2 style={{ margin: "0 0 10px", fontSize: 26 }}>For sellers</h2>
+                <div style={{ display: "grid", gap: 10, color: "#475569" }}>
+                  <p style={{ margin: 0 }}>• Post your rates and available amount</p>
+                  <p style={{ margin: 0 }}>• Manage listings from My Listings</p>
+                  <p style={{ margin: 0 }}>• Edit or remove offers anytime</p>
+                </div>
+              </div>
+            </div>
+
             {!session && (
               <div style={cardStyle}>
-                <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>Authentication</h2>
+                <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>Get started</h2>
 
                 <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
                   <button
@@ -866,130 +927,96 @@ export default function Home() {
             )}
 
             <div style={cardStyle}>
-              <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>Create Offer</h2>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  marginBottom: 16,
+                }}
+              >
+                <div>
+                  <h2 style={{ margin: 0, fontSize: 30 }}>Marketplace Preview</h2>
+                  <p style={{ margin: "6px 0 0", color: "#64748b" }}>
+                    Browse public offers before you decide to log in.
+                  </p>
+                </div>
 
-              {session ? (
-                <>
-                  <div
-                    style={{
-                      background: "#f8fafc",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: 16,
-                      padding: 14,
-                      marginBottom: 14,
-                    }}
-                  >
-                    <p style={{ margin: 0, color: "#475569", fontSize: 14 }}>
-                      Posting as <strong>{profile?.name || "No profile name"}</strong>
-                    </p>
-                    <p style={{ margin: "6px 0 0", color: "#475569", fontSize: 14 }}>
-                      Phone: <strong>{profile?.phone || "No profile phone"}</strong>
-                    </p>
-                  </div>
+                <button style={secondaryButton} onClick={() => setActiveTab("market")}>
+                  Open Marketplace
+                </button>
+              </div>
 
-                  <div style={{ display: "grid", gap: 12 }}>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr 1fr",
-                        gap: 12,
-                      }}
-                    >
-                      <div>
-                        <p style={labelStyle}>From</p>
-                        <select
-                          style={inputStyle}
-                          value={fromCurrency}
-                          onChange={(e) => setFromCurrency(e.target.value)}
-                        >
-                          <option>TZS</option>
-                          <option>GBP</option>
-                          <option>USD</option>
-                          <option>EUR</option>
-                        </select>
-                      </div>
+              {offers.length === 0 ? (
+                <div
+                  style={{
+                    border: "1px dashed #d1d5db",
+                    borderRadius: 16,
+                    padding: 20,
+                    color: "#6b7280",
+                    background: "#f9fafb",
+                  }}
+                >
+                  No live offers yet.
+                </div>
+              ) : (
+                <div style={{ display: "grid", gap: 12 }}>
+                  {offers.slice(0, 3).map((offer) => {
+                    const total = calculateConvertedAmount(
+                      offer.amount,
+                      offer.rate,
+                      offer.from_currency,
+                      offer.to_currency
+                    );
 
-                      <div>
-                        <p style={labelStyle}>To</p>
-                        <select
-                          style={inputStyle}
-                          value={toCurrency}
-                          onChange={(e) => setToCurrency(e.target.value)}
-                        >
-                          <option>GBP</option>
-                          <option>TZS</option>
-                          <option>USD</option>
-                          <option>EUR</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <p style={labelStyle}>Rate</p>
-                      <input
-                        style={inputStyle}
-                        type="number"
-                        placeholder="Rate"
-                        value={rate}
-                        onChange={(e) => setRate(e.target.value)}
-                      />
-                    </div>
-
-                    <div>
-                      <p style={labelStyle}>Amount</p>
-                      <input
-                        style={inputStyle}
-                        type="number"
-                        placeholder="Amount"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                      />
-                    </div>
-
-                    <div
-                      style={{
-                        background: "linear-gradient(135deg, #eef2ff, #f8fafc)",
-                        border: "1px solid #c7d2fe",
-                        borderRadius: 16,
-                        padding: 16,
-                        color: "#312e81",
-                      }}
-                    >
-                      <p
+                    return (
+                      <div
+                        key={offer.id}
                         style={{
-                          margin: "0 0 8px",
-                          fontSize: 12,
-                          fontWeight: 700,
-                          letterSpacing: 0.6,
-                          textTransform: "uppercase",
-                          color: "#4338ca",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: 16,
+                          padding: 16,
+                          background: "#f9fafb",
                         }}
                       >
-                        Live Preview
-                      </p>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: 12,
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <div>
+                            <p style={{ margin: 0, fontWeight: 800, fontSize: 20 }}>
+                              {offer.name}
+                            </p>
+                            <p style={{ margin: "6px 0 0", color: "#475569" }}>
+                              {offer.amount.toLocaleString()} {offer.from_currency} →{" "}
+                              {total.toFixed(2)} {offer.to_currency}
+                            </p>
+                          </div>
 
-                      <p style={{ margin: 0, fontWeight: 800, fontSize: 20 }}>
-                        {numAmount} {fromCurrency} → {previewTotal.toFixed(2)} {toCurrency}
-                      </p>
-                    </div>
-
-                    <button
-                      style={{
-                        ...primaryButton,
-                        opacity: posting ? 0.7 : 1,
-                        cursor: posting ? "not-allowed" : "pointer",
-                      }}
-                      onClick={postOffer}
-                      disabled={posting}
-                    >
-                      {posting ? "Posting..." : "Create Offer"}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <p style={{ margin: 0, color: "#64748b" }}>
-                  Login first to create an offer.
-                </p>
+                          <div
+                            style={{
+                              padding: "8px 12px",
+                              borderRadius: 999,
+                              background: "#dcfce7",
+                              color: "#15803d",
+                              fontSize: 12,
+                              fontWeight: 800,
+                            }}
+                          >
+                            {sellerBadge(offer.user_id)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>
@@ -1237,45 +1264,6 @@ export default function Home() {
                               </p>
                             </div>
                           </div>
-
-                          {isOwner && (
-                            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                              <button
-                                onClick={() => startEditOffer(offer)}
-                                style={{
-                                  padding: "8px 12px",
-                                  borderRadius: 10,
-                                  border: "none",
-                                  background: "#2563eb",
-                                  color: "#fff",
-                                  cursor: "pointer",
-                                  fontSize: 13,
-                                  fontWeight: 700,
-                                }}
-                              >
-                                ✏️ Edit
-                              </button>
-
-                              <button
-                                onClick={() => deleteOffer(offer.id)}
-                                disabled={deletingId === offer.id}
-                                style={{
-                                  padding: "8px 12px",
-                                  borderRadius: 10,
-                                  border: "none",
-                                  background: "#dc2626",
-                                  color: "#fff",
-                                  cursor: deletingId === offer.id ? "not-allowed" : "pointer",
-                                  opacity: deletingId === offer.id ? 0.7 : 1,
-                                  fontSize: 13,
-                                  fontWeight: 700,
-                                }}
-                              >
-                                {deletingId === offer.id ? "Deleting..." : "🗑 Delete"}
-                              </button>
-                            </div>
-                          )}
-
                           {!isOwner && session && (
                             <div style={{ marginTop: 12, color: "#64748b", fontSize: 13 }}>
                               Your coins: {Number(profile?.coins || 0)}
@@ -1372,75 +1360,149 @@ export default function Home() {
           </div>
         )}
 
-        {activeTab === "profile" && (
+        {activeTab === "listings" && (
           <div style={{ display: "grid", gap: 20 }}>
             {session ? (
               <>
                 <div style={cardStyle}>
-                  <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>Profile Setup</h2>
-
                   <div
                     style={{
-                      background: "#eff6ff",
-                      border: "1px solid #bfdbfe",
-                      borderRadius: 16,
-                      padding: 14,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      alignItems: "center",
+                      flexWrap: "wrap",
                       marginBottom: 16,
                     }}
                   >
-                    <p style={{ margin: 0, color: "#1d4ed8", fontWeight: 800 }}>
-                      Coins Balance: {Number(profile?.coins || 0)}
+                    <div>
+                      <h2 style={{ margin: 0, fontSize: 30 }}>My Listings</h2>
+                      <p style={{ margin: "6px 0 0", color: "#64748b" }}>
+                        Create and manage your own marketplace offers here.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      background: "#f8fafc",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: 16,
+                      padding: 14,
+                      marginBottom: 14,
+                    }}
+                  >
+                    <p style={{ margin: 0, color: "#475569", fontSize: 14 }}>
+                      Posting as <strong>{profile?.name || "No profile name"}</strong>
                     </p>
                     <p style={{ margin: "6px 0 0", color: "#475569", fontSize: 14 }}>
-                      For now, add coins manually in Supabase Table Editor to test unlocks.
+                      Phone: <strong>{profile?.phone || "No profile phone"}</strong>
                     </p>
                   </div>
 
                   <div style={{ display: "grid", gap: 12 }}>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: 12,
+                      }}
+                    >
+                      <div>
+                        <p style={labelStyle}>From</p>
+                        <select
+                          style={inputStyle}
+                          value={fromCurrency}
+                          onChange={(e) => setFromCurrency(e.target.value)}
+                        >
+                          <option>TZS</option>
+                          <option>GBP</option>
+                          <option>USD</option>
+                          <option>EUR</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <p style={labelStyle}>To</p>
+                        <select
+                          style={inputStyle}
+                          value={toCurrency}
+                          onChange={(e) => setToCurrency(e.target.value)}
+                        >
+                          <option>GBP</option>
+                          <option>TZS</option>
+                          <option>USD</option>
+                          <option>EUR</option>
+                        </select>
+                      </div>
+                    </div>
+
                     <div>
-                      <p style={labelStyle}>Name</p>
+                      <p style={labelStyle}>Rate</p>
                       <input
                         style={inputStyle}
-                        placeholder="Your full name"
-                        value={profileName}
-                        onChange={(e) => setProfileName(e.target.value)}
+                        type="number"
+                        placeholder="Rate"
+                        value={rate}
+                        onChange={(e) => setRate(e.target.value)}
                       />
                     </div>
 
                     <div>
-                      <p style={labelStyle}>Phone</p>
+                      <p style={labelStyle}>Amount</p>
                       <input
                         style={inputStyle}
-                        placeholder="Phone with country code, e.g. +255712345678"
-                        value={profilePhone}
-                        onChange={(e) => setProfilePhone(e.target.value)}
+                        type="number"
+                        placeholder="Amount"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
                       />
-                      <p style={{ margin: "8px 0 0", fontSize: 13, color: "#64748b" }}>
-                        Local number? Just type 07... and the app will convert it.
+                    </div>
+
+                    <div
+                      style={{
+                        background: "linear-gradient(135deg, #eef2ff, #f8fafc)",
+                        border: "1px solid #c7d2fe",
+                        borderRadius: 16,
+                        padding: 16,
+                        color: "#312e81",
+                      }}
+                    >
+                      <p
+                        style={{
+                          margin: "0 0 8px",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          letterSpacing: 0.6,
+                          textTransform: "uppercase",
+                          color: "#4338ca",
+                        }}
+                      >
+                        Live Preview
+                      </p>
+
+                      <p style={{ margin: 0, fontWeight: 800, fontSize: 20 }}>
+                        {numAmount} {fromCurrency} → {previewTotal.toFixed(2)} {toCurrency}
                       </p>
                     </div>
 
                     <button
                       style={{
                         ...primaryButton,
-                        opacity: savingProfile ? 0.7 : 1,
-                        cursor: savingProfile ? "not-allowed" : "pointer",
+                        opacity: posting ? 0.7 : 1,
+                        cursor: posting ? "not-allowed" : "pointer",
                       }}
-                      onClick={saveProfile}
-                      disabled={savingProfile}
+                      onClick={postOffer}
+                      disabled={posting}
                     >
-                      {savingProfile ? "Saving..." : "Save Profile"}
-                    </button>
-
-                    <button style={darkButton} onClick={logout}>
-                      Logout
+                      {posting ? "Posting..." : "Create Offer"}
                     </button>
                   </div>
                 </div>
 
                 {editingOfferId && (
                   <div style={cardStyle}>
-                    <h2 style={{ margin: "0 0 16px", fontSize: 28 }}>Edit Offer</h2>
+                    <h2 style={{ margin: "0 0 16px", fontSize: 28 }}>Edit Listing</h2>
 
                     <div style={{ display: "grid", gap: 12 }}>
                       <div
@@ -1548,7 +1610,7 @@ export default function Home() {
                 )}
 
                 <div style={cardStyle}>
-                  <h2 style={{ margin: "0 0 16px", fontSize: 28 }}>My Offers</h2>
+                  <h2 style={{ margin: "0 0 16px", fontSize: 28 }}>Your Active Listings</h2>
 
                   {myOffers.length === 0 ? (
                     <div
@@ -1594,7 +1656,8 @@ export default function Home() {
                             </p>
 
                             <p style={{ margin: "6px 0", color: "#374151" }}>
-                              {offer.amount.toLocaleString()} {offer.from_currency} → {total.toFixed(2)} {offer.to_currency}
+                              {offer.amount.toLocaleString()} {offer.from_currency} →{" "}
+                              {total.toFixed(2)} {offer.to_currency}
                             </p>
 
                             <p style={{ margin: "6px 0", color: "#374151" }}>
@@ -1632,7 +1695,215 @@ export default function Home() {
               <div style={cardStyle}>
                 <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>Login Required</h2>
                 <p style={{ margin: 0, color: "#64748b" }}>
-                  Log in first to manage your profile, coins, and offers.
+                  Log in first to create and manage your listings.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "contacts" && (
+          <div style={{ display: "grid", gap: 20 }}>
+            {session ? (
+              <div style={cardStyle}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    marginBottom: 16,
+                  }}
+                >
+                  <div>
+                    <h2 style={{ margin: 0, fontSize: 30 }}>Unlocked Contacts</h2>
+                    <p style={{ margin: "6px 0 0", color: "#64748b" }}>
+                      Sellers whose details you have already unlocked.
+                    </p>
+                  </div>
+
+                  <div
+                    style={{
+                      background: "#eff6ff",
+                      border: "1px solid #bfdbfe",
+                      borderRadius: 14,
+                      padding: "10px 14px",
+                      fontWeight: 800,
+                      color: "#1d4ed8",
+                    }}
+                  >
+                    Coins: {Number(profile?.coins || 0)}
+                  </div>
+                </div>
+
+                {unlockedOffers.length === 0 ? (
+                  <div
+                    style={{
+                      border: "1px dashed #d1d5db",
+                      borderRadius: 16,
+                      padding: 20,
+                      color: "#6b7280",
+                      background: "#f9fafb",
+                    }}
+                  >
+                    You have not unlocked any contacts yet.
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gap: 12 }}>
+                    {unlockedOffers.map((offer) => {
+                      const message = encodeURIComponent(
+                        `Hi ${offer.name}, I'm interested in your ${offer.from_currency} to ${offer.to_currency} offer on P2P FX Marketplace.`
+                      );
+
+                      const total = calculateConvertedAmount(
+                        offer.amount,
+                        offer.rate,
+                        offer.from_currency,
+                        offer.to_currency
+                      );
+
+                      return (
+                        <div
+                          key={offer.id}
+                          style={{
+                            border: "1px solid #e5e7eb",
+                            borderRadius: 16,
+                            padding: 16,
+                            background: "#f9fafb",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              gap: 12,
+                              alignItems: "start",
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <div>
+                              <p style={{ margin: "0 0 8px", fontWeight: 800, fontSize: 22 }}>
+                                {offer.name}
+                              </p>
+                              <p style={{ margin: "6px 0", color: "#374151" }}>
+                                Pair: {offer.from_currency} → {offer.to_currency}
+                              </p>
+                              <p style={{ margin: "6px 0", color: "#374151" }}>
+                                Amount: {offer.amount.toLocaleString()} {offer.from_currency}
+                              </p>
+                              <p style={{ margin: "6px 0", color: "#374151" }}>
+                                Total: {total.toFixed(2)} {offer.to_currency}
+                              </p>
+                              <p style={{ margin: "6px 0", color: "#374151" }}>
+                                Phone: {offer.phone}
+                              </p>
+                            </div>
+
+                            <a
+                              href={`https://wa.me/${String(offer.phone).replace(/\D/g, "")}?text=${message}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{
+                                display: "inline-block",
+                                padding: "12px 16px",
+                                background: "#22c55e",
+                                color: "#fff",
+                                borderRadius: 14,
+                                textDecoration: "none",
+                                fontWeight: 800,
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              Chat on WhatsApp
+                            </a>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={cardStyle}>
+                <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>Login Required</h2>
+                <p style={{ margin: 0, color: "#64748b" }}>
+                  Log in first to view your unlocked contacts.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "profile" && (
+          <div style={{ display: "grid", gap: 20 }}>
+            {session ? (
+              <div style={cardStyle}>
+                <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>Profile Setup</h2>
+
+                <div
+                  style={{
+                    background: "#eff6ff",
+                    border: "1px solid #bfdbfe",
+                    borderRadius: 16,
+                    padding: 14,
+                    marginBottom: 16,
+                  }}
+                >
+                  <p style={{ margin: 0, color: "#1d4ed8", fontWeight: 800 }}>
+                    Coins Balance: {Number(profile?.coins || 0)}
+                  </p>
+                  <p style={{ margin: "6px 0 0", color: "#475569", fontSize: 14 }}>
+                    For now, add coins manually in Supabase Table Editor to test unlocks.
+                  </p>
+                </div>
+
+                <div style={{ display: "grid", gap: 12 }}>
+                  <div>
+                    <p style={labelStyle}>Name</p>
+                    <input
+                      style={inputStyle}
+                      placeholder="Your full name"
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <p style={labelStyle}>Phone</p>
+                    <input
+                      style={inputStyle}
+                      placeholder="Phone with country code, e.g. +255712345678"
+                      value={profilePhone}
+                      onChange={(e) => setProfilePhone(e.target.value)}
+                    />
+                    <p style={{ margin: "8px 0 0", fontSize: 13, color: "#64748b" }}>
+                      Local number? Just type 07... and the app will convert it.
+                    </p>
+                  </div>
+
+                  <button
+                    style={{
+                      ...primaryButton,
+                      opacity: savingProfile ? 0.7 : 1,
+                      cursor: savingProfile ? "not-allowed" : "pointer",
+                    }}
+                    onClick={saveProfile}
+                    disabled={savingProfile}
+                  >
+                    {savingProfile ? "Saving..." : "Save Profile"}
+                  </button>
+
+                  <button style={darkButton} onClick={logout}>
+                    Logout
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={cardStyle}>
+                <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>Login Required</h2>
+                <p style={{ margin: 0, color: "#64748b" }}>
+                  Log in first to manage your profile and coins.
                 </p>
               </div>
             )}
