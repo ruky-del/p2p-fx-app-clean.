@@ -21,6 +21,7 @@ type Profile = {
   email?: string;
   name?: string;
   phone?: string;
+  coins?: number;
 };
 
 type Notice = {
@@ -53,6 +54,7 @@ export default function Home() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [posting, setPosting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [unlockingId, setUnlockingId] = useState<string | null>(null);
 
   const [editingOfferId, setEditingOfferId] = useState<string | null>(null);
   const [editFromCurrency, setEditFromCurrency] = useState("TZS");
@@ -65,7 +67,10 @@ export default function Home() {
   const [filterFrom, setFilterFrom] = useState("ALL");
   const [filterTo, setFilterTo] = useState("ALL");
 
+  const [unlockedOfferIds, setUnlockedOfferIds] = useState<string[]>([]);
   const [notice, setNotice] = useState<Notice>(null);
+
+  const UNLOCK_COST = 2;
 
   const showNotice = (type: "success" | "error", text: string) => {
     setNotice({ type, text });
@@ -92,6 +97,22 @@ export default function Home() {
     }
 
     return cleanedPhone;
+  }
+
+  function maskPhone(phone: string) {
+    const cleaned = normalizePhone(phone);
+
+    if (cleaned.startsWith("+255") && cleaned.length >= 10) {
+      return `${cleaned.slice(0, 8)} *** ***`;
+    }
+
+    if (cleaned.startsWith("+44") && cleaned.length >= 8) {
+      return `${cleaned.slice(0, 6)} *** ***`;
+    }
+
+    if (cleaned.length <= 6) return "******";
+
+    return `${cleaned.slice(0, 4)}***${cleaned.slice(-3)}`;
   }
 
   function calculateConvertedAmount(
@@ -149,13 +170,30 @@ export default function Home() {
     setProfilePhone(data.phone || "");
   }
 
+  async function fetchUnlockedContacts(userId: string) {
+    const { data, error } = await supabase
+      .from("unlocked_contacts")
+      .select("offer_id")
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error(error);
+      setUnlockedOfferIds([]);
+      return;
+    }
+
+    setUnlockedOfferIds((data || []).map((row: any) => row.offer_id));
+  }
+
   useEffect(() => {
     if (session?.user?.id) {
       fetchProfile(session.user.id);
+      fetchUnlockedContacts(session.user.id);
     } else {
       setProfile(null);
       setProfileName("");
       setProfilePhone("");
+      setUnlockedOfferIds([]);
     }
   }, [session]);
 
@@ -407,6 +445,66 @@ export default function Home() {
     showNotice("success", "Offer deleted");
   }
 
+  async function unlockContact(offer: Offer) {
+    if (!session?.user?.id) {
+      showNotice("error", "Login first to unlock contact");
+      return;
+    }
+
+    if (offer.user_id === session.user.id) {
+      showNotice("success", "This is your own listing");
+      return;
+    }
+
+    if (unlockedOfferIds.includes(offer.id)) {
+      showNotice("success", "Contact already unlocked");
+      return;
+    }
+
+    const currentCoins = Number(profile?.coins || 0);
+
+    if (currentCoins < UNLOCK_COST) {
+      showNotice("error", `You need ${UNLOCK_COST} coins to unlock this contact`);
+      return;
+    }
+
+    setUnlockingId(offer.id);
+
+    const { error: insertError } = await supabase.from("unlocked_contacts").insert([
+      {
+        user_id: session.user.id,
+        offer_id: offer.id,
+      },
+    ]);
+
+    if (insertError) {
+      setUnlockingId(null);
+      console.error(insertError);
+      showNotice("error", "Failed to unlock contact");
+      return;
+    }
+
+    const { error: updateProfileError } = await supabase
+      .from("profiles")
+      .update({
+        coins: currentCoins - UNLOCK_COST,
+      })
+      .eq("id", session.user.id);
+
+    setUnlockingId(null);
+
+    if (updateProfileError) {
+      console.error(updateProfileError);
+      showNotice("error", "Contact saved, but failed to update coins");
+      await fetchUnlockedContacts(session.user.id);
+      return;
+    }
+
+    await fetchProfile(session.user.id);
+    await fetchUnlockedContacts(session.user.id);
+    showNotice("success", `Contact unlocked. ${UNLOCK_COST} coins used.`);
+  }
+
   const filteredOffers = useMemo(() => {
     return offers.filter((offer) => {
       const q = search.trim().toLowerCase();
@@ -582,6 +680,14 @@ export default function Home() {
       activeTab === tab ? "0 10px 20px rgba(37,99,235,0.18)" : "none",
   });
 
+  const getVisiblePhone = (offer: Offer) => {
+    const isOwner = offer.user_id === session?.user?.id;
+    const isUnlocked = unlockedOfferIds.includes(offer.id);
+
+    if (isOwner || isUnlocked) return offer.phone;
+    return maskPhone(offer.phone);
+  };
+
   return (
     <main style={pageStyle}>
       {notice && <div style={noticeStyle}>{notice.text}</div>}
@@ -655,8 +761,8 @@ export default function Home() {
                       color: "rgba(255,255,255,0.88)",
                     }}
                   >
-                    Buy and sell foreign currency with live offers, direct
-                    WhatsApp contact, and a cleaner marketplace experience.
+                    Public marketplace for live offers. Login and use coins to
+                    unlock seller contact details.
                   </p>
                 </div>
 
@@ -680,6 +786,17 @@ export default function Home() {
                       style={{ margin: "8px 0 0", fontWeight: 800, fontSize: 24 }}
                     >
                       {myOffers.length}
+                    </p>
+                  </div>
+
+                  <div style={statBox}>
+                    <p style={{ margin: 0, opacity: 0.75, fontSize: 13 }}>
+                      Coins
+                    </p>
+                    <p
+                      style={{ margin: "8px 0 0", fontWeight: 800, fontSize: 24 }}
+                    >
+                      {session ? Number(profile?.coins || 0) : "-"}
                     </p>
                   </div>
                 </div>
@@ -906,7 +1023,7 @@ export default function Home() {
                   fontWeight: 700,
                 }}
               >
-                Live listings
+                Public listings
               </div>
             </div>
 
@@ -967,6 +1084,10 @@ export default function Home() {
             ) : (
               <div style={{ display: "grid", gap: 14 }}>
                 {filteredOffers.map((offer) => {
+                  const isOwner = offer.user_id === session?.user?.id;
+                  const isUnlocked = unlockedOfferIds.includes(offer.id);
+                  const canSeeFullContact = isOwner || isUnlocked;
+
                   const message = encodeURIComponent(
                     `Hi ${offer.name}, I'm interested in your ${offer.from_currency} to ${offer.to_currency} offer on P2P FX Marketplace.`
                   );
@@ -1125,15 +1246,15 @@ export default function Home() {
                                 style={{
                                   margin: "8px 0 0",
                                   fontWeight: 800,
-                                  color: "#0f172a",
+                                  color: canSeeFullContact ? "#0f172a" : "#64748b",
                                 }}
                               >
-                                {offer.phone}
+                                {getVisiblePhone(offer)}
                               </p>
                             </div>
                           </div>
 
-                          {offer.user_id === session?.user?.id && (
+                          {isOwner && (
                             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                               <button
                                 onClick={() => startEditOffer(offer)}
@@ -1160,7 +1281,10 @@ export default function Home() {
                                   border: "none",
                                   background: "#dc2626",
                                   color: "#fff",
-                                  cursor: deletingId === offer.id ? "not-allowed" : "pointer",
+                                  cursor:
+                                    deletingId === offer.id
+                                      ? "not-allowed"
+                                      : "pointer",
                                   opacity: deletingId === offer.id ? 0.7 : 1,
                                   fontSize: 13,
                                   fontWeight: 700,
@@ -1172,27 +1296,92 @@ export default function Home() {
                           )}
                         </div>
 
-                        <a
-                          href={`https://wa.me/${String(offer.phone).replace(
-                            /\D/g,
-                            ""
-                          )}?text=${message}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{
-                            display: "inline-block",
-                            padding: "12px 16px",
-                            background: "#22c55e",
-                            color: "#fff",
-                            borderRadius: 14,
-                            textDecoration: "none",
-                            fontWeight: 800,
-                            whiteSpace: "nowrap",
-                            boxShadow: "0 10px 20px rgba(34,197,94,0.18)",
-                          }}
-                        >
-                          Chat on WhatsApp
-                        </a>
+                        <div style={{ display: "grid", gap: 10 }}>
+                          {canSeeFullContact ? (
+                            <a
+                              href={`https://wa.me/${String(offer.phone).replace(
+                                /\D/g,
+                                ""
+                              )}?text=${message}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{
+                                display: "inline-block",
+                                padding: "12px 16px",
+                                background: "#22c55e",
+                                color: "#fff",
+                                borderRadius: 14,
+                                textDecoration: "none",
+                                fontWeight: 800,
+                                whiteSpace: "nowrap",
+                                boxShadow: "0 10px 20px rgba(34,197,94,0.18)",
+                              }}
+                            >
+                              Chat on WhatsApp
+                            </a>
+                          ) : !session ? (
+                            <button
+                              onClick={() => setActiveTab("home")}
+                              style={{
+                                padding: "12px 16px",
+                                background: "#2563eb",
+                                color: "#fff",
+                                borderRadius: 14,
+                                border: "none",
+                                fontWeight: 800,
+                                cursor: "pointer",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              Login to unlock
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => unlockContact(offer)}
+                              disabled={unlockingId === offer.id}
+                              style={{
+                                padding: "12px 16px",
+                                background:
+                                  Number(profile?.coins || 0) >= UNLOCK_COST
+                                    ? "#0f172a"
+                                    : "#94a3b8",
+                                color: "#fff",
+                                borderRadius: 14,
+                                border: "none",
+                                fontWeight: 800,
+                                cursor:
+                                  unlockingId === offer.id
+                                    ? "not-allowed"
+                                    : "pointer",
+                                opacity: unlockingId === offer.id ? 0.7 : 1,
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {unlockingId === offer.id
+                                ? "Unlocking..."
+                                : Number(profile?.coins || 0) >= UNLOCK_COST
+                                ? `Unlock Contact (${UNLOCK_COST} coins)`
+                                : `Need ${UNLOCK_COST} coins`}
+                            </button>
+                          )}
+
+                          {!canSeeFullContact && (
+                            <div
+                              style={{
+                                padding: "10px 12px",
+                                borderRadius: 12,
+                                background: "#fff7ed",
+                                border: "1px solid #fed7aa",
+                                color: "#9a3412",
+                                fontSize: 13,
+                                fontWeight: 700,
+                                textAlign: "center",
+                              }}
+                            >
+                              Contact hidden until unlock
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -1210,6 +1399,24 @@ export default function Home() {
                   <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>
                     Profile Setup
                   </h2>
+
+                  <div
+                    style={{
+                      background: "#eff6ff",
+                      border: "1px solid #bfdbfe",
+                      borderRadius: 16,
+                      padding: 14,
+                      marginBottom: 16,
+                    }}
+                  >
+                    <p style={{ margin: 0, color: "#1d4ed8", fontWeight: 800 }}>
+                      Coins Balance: {Number(profile?.coins || 0)}
+                    </p>
+                    <p style={{ margin: "6px 0 0", color: "#475569", fontSize: 14 }}>
+                      For now, add coins manually in Supabase Table Editor to test
+                      unlocks.
+                    </p>
+                  </div>
 
                   <div style={{ display: "grid", gap: 12 }}>
                     <div>
@@ -1462,7 +1669,7 @@ export default function Home() {
                   Login Required
                 </h2>
                 <p style={{ margin: 0, color: "#64748b" }}>
-                  Log in first to manage your profile and offers.
+                  Log in first to manage your profile, coins, and offers.
                 </p>
               </div>
             )}
