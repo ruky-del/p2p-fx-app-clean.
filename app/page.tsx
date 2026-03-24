@@ -366,8 +366,7 @@ export default function Home() {
         rate: editRateNum,
         amount: editAmountNum,
       })
-      .eq("id", editingOfferId)
-      .eq("user_id", session?.user?.id);
+      .eq("id", editingOfferId);
 
     setUpdatingOffer(false);
 
@@ -389,11 +388,7 @@ export default function Home() {
 
     setDeletingId(offerId);
 
-    const { error } = await supabase
-      .from("offers")
-      .delete()
-      .eq("id", offerId)
-      .eq("user_id", session?.user?.id);
+    const { error } = await supabase.from("offers").delete().eq("id", offerId);
 
     setDeletingId(null);
 
@@ -566,6 +561,7 @@ export default function Home() {
 
   const sellerBadge = (userId: string) => {
     const count = offers.filter((o) => o.user_id === userId).length;
+
     if (count >= 5) return "⭐ Trusted Seller";
     if (count >= 2) return "Active Seller";
     return "New Seller";
@@ -615,7 +611,6 @@ export default function Home() {
             Profile
           </button>
         </div>
-
         {activeTab === "home" && (
           <div style={{ display: "grid", gap: 20 }}>
             <div style={heroStyle}>
@@ -1165,13 +1160,10 @@ export default function Home() {
                                   border: "none",
                                   background: "#dc2626",
                                   color: "#fff",
-                                  cursor:
-                                    deletingId === offer.id
-                                      ? "not-allowed"
-                                      : "pointer",
+                                  cursor: deletingId === offer.id ? "not-allowed" : "pointer",
+                                  opacity: deletingId === offer.id ? 0.7 : 1,
                                   fontSize: 13,
                                   fontWeight: 700,
-                                  opacity: deletingId === offer.id ? 0.7 : 1,
                                 }}
                               >
                                 {deletingId === offer.id ? "Deleting..." : "🗑 Delete"}
