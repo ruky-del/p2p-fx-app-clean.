@@ -1275,6 +1275,12 @@ export default function Home() {
                               </button>
                             </div>
                           )}
+
+                          {!isOwner && session && (
+                            <div style={{ marginTop: 12, color: "#64748b", fontSize: 13 }}>
+                              Your coins: {Number(profile?.coins || 0)}
+                            </div>
+                          )}
                         </div>
 
                         <div style={{ display: "grid", gap: 10 }}>
