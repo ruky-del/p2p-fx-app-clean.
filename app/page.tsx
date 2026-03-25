@@ -1094,14 +1094,42 @@ export default function Page() {
           <NavButton id="profile" label="Profile" />
         </div>
 
-        <section className="hero">
-          <p className="hero-kicker">Secure FX Discovery</p>
-          <h1 className="hero-title">P2P FX Marketplace</h1>
-          <p className="hero-subtitle">
-            Discover live foreign exchange offers, unlock trusted seller contacts,
-            manage your own listings, and keep your trading flow organized in one
-            clean mobile-friendly marketplace.
-          </p>
+        <section
+  className="hero"
+  onClick={() => setActiveTab("market")}
+  style={{ cursor: "pointer" }}
+>>
+          <p className="hero-kicker">Tanzania ↔ UK Exchange Network</p>
+<h1 className="hero-title">P2P FX Marketplace</h1>
+<p className="hero-subtitle">
+  A trusted peer-to-peer platform connecting people who need to exchange
+  money between Tanzania and the UK — without bank limits, delays, or
+  unnecessary restrictions.
+</p>
+<p
+  style={{
+    margin: "10px 0 0",
+    fontSize: 14,
+    lineHeight: 1.5,
+    color: "rgba(255,255,255,0.82)",
+    maxWidth: 760,
+  }}
+>
+  Built to solve real problems: sending large amounts, avoiding banking
+  issues, and finding reliable exchange partners in one secure place.
+</p>
+<p
+  style={{
+    margin: "10px 0 0",
+    fontSize: 12,
+    lineHeight: 1.5,
+    color: "rgba(255,255,255,0.68)",
+    maxWidth: 760,
+  }}
+>
+  Always verify before exchanging. This platform connects users, and users
+  remain responsible for their transactions.
+</p>
 
           <div className="stats-grid">
             <div className="stat-box">
