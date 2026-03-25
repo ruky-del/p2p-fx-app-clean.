@@ -30,10 +30,10 @@ type Notice = {
 } | null;
 
 type Tab = "home" | "market" | "listings" | "contacts" | "profile";
+type SortMode = "newest" | "best_rate";
 
-export default function Home() {
+export default function Page() {
   const [activeTab, setActiveTab] = useState<Tab>("home");
-
   const [session, setSession] = useState<any>(null);
 
   const [email, setEmail] = useState("");
@@ -46,15 +46,24 @@ export default function Home() {
   const [profilePhone, setProfilePhone] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
 
-  const [fromCurrency, setFromCurrency] = useState("TZS");
-  const [toCurrency, setToCurrency] = useState("GBP");
-  const [rate, setRate] = useState("3600");
-  const [amount, setAmount] = useState("");
-
   const [offers, setOffers] = useState<Offer[]>([]);
-  const [posting, setPosting] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [offersLoading, setOffersLoading] = useState(true);
+
+  const [notice, setNotice] = useState<Notice>(null);
+
+  const [search, setSearch] = useState("");
+  const [filterFrom, setFilterFrom] = useState("ALL");
+  const [filterTo, setFilterTo] = useState("ALL");
+  const [sortMode, setSortMode] = useState<SortMode>("newest");
+
+  const [unlockedOfferIds, setUnlockedOfferIds] = useState<string[]>([]);
   const [unlockingId, setUnlockingId] = useState<string | null>(null);
+
+  const [listingFromCurrency, setListingFromCurrency] = useState("TZS");
+  const [listingToCurrency, setListingToCurrency] = useState("GBP");
+  const [listingRate, setListingRate] = useState("3600");
+  const [listingAmount, setListingAmount] = useState("");
+  const [posting, setPosting] = useState(false);
 
   const [editingOfferId, setEditingOfferId] = useState<string | null>(null);
   const [editFromCurrency, setEditFromCurrency] = useState("TZS");
@@ -62,13 +71,7 @@ export default function Home() {
   const [editRate, setEditRate] = useState("3600");
   const [editAmount, setEditAmount] = useState("");
   const [updatingOffer, setUpdatingOffer] = useState(false);
-
-  const [search, setSearch] = useState("");
-  const [filterFrom, setFilterFrom] = useState("ALL");
-  const [filterTo, setFilterTo] = useState("ALL");
-
-  const [unlockedOfferIds, setUnlockedOfferIds] = useState<string[]>([]);
-  const [notice, setNotice] = useState<Notice>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const UNLOCK_COST = 2;
 
@@ -135,6 +138,24 @@ export default function Home() {
     return rawAmount * rawRate;
   }
 
+  function sellerBadge(userId: string) {
+    const count = offers.filter((o) => o.user_id === userId).length;
+    if (count >= 5) {
+      return { text: "Trusted Seller", tone: "success" as const };
+    }
+    if (count >= 2) {
+      return { text: "Active Seller", tone: "info" as const };
+    }
+    return { text: "New Seller", tone: "neutral" as const };
+  }
+
+  function getVisiblePhone(offer: Offer) {
+    const isOwner = offer.user_id === session?.user?.id;
+    const isUnlocked = unlockedOfferIds.includes(offer.id);
+    if (isOwner || isUnlocked) return offer.phone;
+    return maskPhone(offer.phone);
+  }
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -184,6 +205,28 @@ export default function Home() {
 
     setUnlockedOfferIds((data || []).map((row: any) => row.offer_id));
   }
+
+  async function fetchOffers() {
+    setOffersLoading(true);
+
+    const { data, error } = await supabase
+      .from("offers")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    setOffersLoading(false);
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    setOffers((data || []) as Offer[]);
+  }
+
+  useEffect(() => {
+    fetchOffers();
+  }, []);
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -301,42 +344,6 @@ export default function Home() {
     await fetchProfile(session.user.id);
     showNotice("success", "Profile saved successfully");
   }
-
-  async function fetchOffers() {
-    const { data, error } = await supabase
-      .from("offers")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-    setOffers((data || []) as Offer[]);
-  }
-
-  useEffect(() => {
-    fetchOffers();
-  }, []);
-
-  const numRate = Number(rate || 0);
-  const numAmount = Number(amount || 0);
-
-  const previewTotal = calculateConvertedAmount(
-    numAmount,
-    numRate,
-    fromCurrency,
-    toCurrency
-  );
-
-  const editPreviewTotal = calculateConvertedAmount(
-    Number(editAmount || 0),
-    Number(editRate || 0),
-    editFromCurrency,
-    editToCurrency
-  );
-
   async function postOffer() {
     if (!session?.user?.id) {
       showNotice("error", "Login first");
@@ -348,7 +355,10 @@ export default function Home() {
       return;
     }
 
-    if (!numAmount || !numRate) {
+    const amountNum = Number(listingAmount || 0);
+    const rateNum = Number(listingRate || 0);
+
+    if (!amountNum || !rateNum) {
       showNotice("error", "Enter amount and rate");
       return;
     }
@@ -361,10 +371,10 @@ export default function Home() {
         email: session.user.email,
         name: profile.name,
         phone: profile.phone,
-        from_currency: fromCurrency,
-        to_currency: toCurrency,
-        rate: numRate,
-        amount: numAmount,
+        from_currency: listingFromCurrency,
+        to_currency: listingToCurrency,
+        rate: rateNum,
+        amount: amountNum,
       },
     ]);
 
@@ -372,14 +382,14 @@ export default function Home() {
 
     if (error) {
       console.error(error);
-      showNotice("error", "Failed to post offer");
+      showNotice("error", "Failed to create listing");
       return;
     }
 
-    setAmount("");
-    setRate("3600");
+    setListingAmount("");
+    setListingRate("3600");
     await fetchOffers();
-    showNotice("success", "Offer posted successfully");
+    showNotice("success", "Listing created successfully");
   }
 
   function startEditOffer(offer: Offer) {
@@ -428,17 +438,17 @@ export default function Home() {
 
     if (error) {
       console.error(error);
-      showNotice("error", "Failed to update offer");
+      showNotice("error", "Failed to update listing");
       return;
     }
 
     await fetchOffers();
     cancelEditOffer();
-    showNotice("success", "Offer updated successfully");
+    showNotice("success", "Listing updated successfully");
   }
 
   async function deleteOffer(offerId: string) {
-    const confirmed = window.confirm("Delete this offer?");
+    const confirmed = window.confirm("Delete this listing?");
     if (!confirmed) return;
 
     setDeletingId(offerId);
@@ -453,7 +463,7 @@ export default function Home() {
 
     if (error) {
       console.error(error);
-      showNotice("error", "Failed to delete offer");
+      showNotice("error", "Failed to delete listing");
       return;
     }
 
@@ -463,7 +473,7 @@ export default function Home() {
       cancelEditOffer();
     }
 
-    showNotice("success", "Offer deleted");
+    showNotice("success", "Listing deleted");
   }
 
   async function unlockContact(offer: Offer) {
@@ -482,21 +492,23 @@ export default function Home() {
       return;
     }
 
-    const currentCoins = Number(profile?.coins || 0);
+    const currentCredits = Number(profile?.coins || 0);
 
-    if (currentCoins < UNLOCK_COST) {
-      showNotice("error", `You need ${UNLOCK_COST} coins to unlock this contact`);
+    if (currentCredits < UNLOCK_COST) {
+      showNotice("error", `You need ${UNLOCK_COST} credits to unlock this contact`);
       return;
     }
 
     setUnlockingId(offer.id);
 
-    const { error: insertError } = await supabase.from("unlocked_contacts").insert([
-      {
-        user_id: session.user.id,
-        offer_id: offer.id,
-      },
-    ]);
+    const { error: insertError } = await supabase
+      .from("unlocked_contacts")
+      .insert([
+        {
+          user_id: session.user.id,
+          offer_id: offer.id,
+        },
+      ]);
 
     if (insertError) {
       setUnlockingId(null);
@@ -508,7 +520,7 @@ export default function Home() {
     const { error: updateProfileError } = await supabase
       .from("profiles")
       .update({
-        coins: currentCoins - UNLOCK_COST,
+        coins: currentCredits - UNLOCK_COST,
       })
       .eq("id", session.user.id);
 
@@ -516,18 +528,32 @@ export default function Home() {
 
     if (updateProfileError) {
       console.error(updateProfileError);
-      showNotice("error", "Contact unlocked, but failed to update coins");
+      showNotice("error", "Contact unlocked, but credit update failed");
       await fetchUnlockedContacts(session.user.id);
       return;
     }
 
     await fetchProfile(session.user.id);
     await fetchUnlockedContacts(session.user.id);
-    showNotice("success", `Contact unlocked. ${UNLOCK_COST} coins used.`);
+    showNotice("success", `Contact unlocked. ${UNLOCK_COST} credits used.`);
   }
 
-  const filteredOffers = useMemo(() => {
-    return offers.filter((offer) => {
+  const listingPreview = calculateConvertedAmount(
+    Number(listingAmount || 0),
+    Number(listingRate || 0),
+    listingFromCurrency,
+    listingToCurrency
+  );
+
+  const editPreview = calculateConvertedAmount(
+    Number(editAmount || 0),
+    Number(editRate || 0),
+    editFromCurrency,
+    editToCurrency
+  );
+
+  const sortedFilteredOffers = useMemo(() => {
+    const filtered = offers.filter((offer) => {
       const q = search.trim().toLowerCase();
 
       const matchesSearch =
@@ -543,7 +569,18 @@ export default function Home() {
 
       return matchesSearch && matchesFrom && matchesTo;
     });
-  }, [offers, search, filterFrom, filterTo]);
+
+    if (sortMode === "best_rate") {
+      return [...filtered].sort((a, b) => {
+        if (a.from_currency === "TZS" && a.to_currency !== "TZS") {
+          return a.rate - b.rate;
+        }
+        return b.rate - a.rate;
+      });
+    }
+
+    return filtered;
+  }, [offers, search, filterFrom, filterTo, sortMode]);
 
   const myOffers = useMemo(() => {
     if (!session?.user?.id) return [];
@@ -558,363 +595,608 @@ export default function Home() {
     );
   }, [offers, unlockedOfferIds, session]);
 
-  const pageStyle: React.CSSProperties = {
-    minHeight: "100vh",
-    background:
-      "radial-gradient(circle at top left, #dbeafe 0%, #eef4ff 35%, #f8fbff 70%, #ffffff 100%)",
-    padding: "24px 16px 60px",
-    fontFamily: "Arial, sans-serif",
-    color: "#0f172a",
+  const stats = {
+    liveOffers: offers.length,
+    myListings: myOffers.length,
+    contacts: unlockedOffers.length,
+    credits: Number(profile?.coins || 0),
   };
 
-  const containerStyle: React.CSSProperties = {
-    maxWidth: 1180,
-    margin: "0 auto",
-  };
-
-  const heroStyle: React.CSSProperties = {
-    background: "linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%)",
-    color: "white",
-    borderRadius: 28,
-    padding: 30,
-    marginBottom: 20,
-    boxShadow: "0 18px 40px rgba(29, 78, 216, 0.22)",
-  };
-
-  const cardStyle: React.CSSProperties = {
-    background: "rgba(255,255,255,0.96)",
-    backdropFilter: "blur(8px)",
-    border: "1px solid #e5e7eb",
-    borderRadius: 22,
-    padding: 22,
-    boxShadow: "0 14px 34px rgba(15, 23, 42, 0.06)",
-  };
-
-  const inputStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "14px 16px",
-    borderRadius: 14,
-    border: "1px solid #dbe2ea",
-    fontSize: 15,
-    boxSizing: "border-box",
-    background: "#fff",
-    outline: "none",
-    color: "#0f172a",
-  };
-
-  const labelStyle: React.CSSProperties = {
-    margin: "0 0 8px",
-    fontSize: 12,
-    fontWeight: 700,
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-    color: "#64748b",
-  };
-
-  const primaryButton: React.CSSProperties = {
-    width: "100%",
-    padding: "13px 18px",
-    border: "none",
-    borderRadius: 14,
-    background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-    color: "#ffffff",
-    fontWeight: 700,
-    cursor: "pointer",
-    boxShadow: "0 10px 20px rgba(37, 99, 235, 0.18)",
-  };
-
-  const darkButton: React.CSSProperties = {
-    width: "100%",
-    padding: "13px 18px",
-    border: "none",
-    borderRadius: 14,
-    background: "#0f172a",
-    color: "#ffffff",
-    fontWeight: 700,
-    cursor: "pointer",
-  };
-
-  const secondaryButton: React.CSSProperties = {
-    width: "100%",
-    padding: "13px 18px",
-    border: "1px solid #cbd5e1",
-    borderRadius: 14,
-    background: "#ffffff",
-    color: "#0f172a",
-    fontWeight: 700,
-    cursor: "pointer",
-  };
-
-  const smallButton: React.CSSProperties = {
-    padding: "10px 14px",
-    border: "none",
-    borderRadius: 12,
-    background: "#0f172a",
-    color: "#ffffff",
-    fontWeight: 700,
-    cursor: "pointer",
-  };
-
-  const dangerButton: React.CSSProperties = {
-    padding: "10px 14px",
-    border: "none",
-    borderRadius: 12,
-    background: "#dc2626",
-    color: "#ffffff",
-    fontWeight: 700,
-    cursor: "pointer",
-  };
-
-  const noticeStyle: React.CSSProperties = {
-    position: "fixed",
-    top: 18,
-    right: 18,
-    zIndex: 9999,
-    padding: "12px 16px",
-    borderRadius: 14,
-    color: "#fff",
-    fontWeight: 700,
-    boxShadow: "0 10px 24px rgba(15,23,42,0.18)",
-    background: notice?.type === "success" ? "#16a34a" : "#dc2626",
-  };
-
-  const statBox: React.CSSProperties = {
-    background: "rgba(255,255,255,0.1)",
-    border: "1px solid rgba(255,255,255,0.16)",
-    borderRadius: 18,
-    padding: 16,
-    minWidth: 150,
-  };
-
-  const sellerBadge = (userId: string) => {
-    const count = offers.filter((o) => o.user_id === userId).length;
-
-    if (count >= 5) return "⭐ Trusted Seller";
-    if (count >= 2) return "Active Seller";
-    return "New Seller";
-  };
-
-  const tabButtonStyle = (tab: Tab): React.CSSProperties => ({
-    padding: "12px 18px",
-    borderRadius: 14,
-    border: "1px solid",
-    borderColor: activeTab === tab ? "#2563eb" : "#dbe2ea",
-    background: activeTab === tab ? "#2563eb" : "#ffffff",
-    color: activeTab === tab ? "#ffffff" : "#0f172a",
-    fontWeight: 800,
-    cursor: "pointer",
-    boxShadow:
-      activeTab === tab ? "0 10px 20px rgba(37,99,235,0.18)" : "none",
-  });
-
-  const getVisiblePhone = (offer: Offer) => {
-    const isOwner = offer.user_id === session?.user?.id;
-    const isUnlocked = unlockedOfferIds.includes(offer.id);
-
-    if (isOwner || isUnlocked) return offer.phone;
-    return maskPhone(offer.phone);
-  };
+  const NavButton = ({
+    id,
+    label,
+  }: {
+    id: Tab;
+    label: string;
+  }) => (
+    <button
+      className={`nav-chip ${activeTab === id ? "active" : ""}`}
+      onClick={() => setActiveTab(id)}
+      type="button"
+    >
+      {label}
+    </button>
+  );
 
   return (
-    <main style={pageStyle}>
-      {notice && <div style={noticeStyle}>{notice.text}</div>}
+    <main className="app-shell">
+      <style jsx global>{`
+        * {
+          box-sizing: border-box;
+        }
 
-      <div style={containerStyle}>
-        <div
-          style={{
-            display: "flex",
-            gap: 10,
-            marginBottom: 20,
-            flexWrap: "wrap",
-          }}
-        >
-          <button style={tabButtonStyle("home")} onClick={() => setActiveTab("home")}>
-            Home
-          </button>
-          <button style={tabButtonStyle("market")} onClick={() => setActiveTab("market")}>
-            Marketplace
-          </button>
-          <button
-            style={tabButtonStyle("listings")}
-            onClick={() => setActiveTab("listings")}
-          >
-            My Listings
-          </button>
-          <button
-            style={tabButtonStyle("contacts")}
-            onClick={() => setActiveTab("contacts")}
-          >
-            Contacts
-          </button>
-          <button
-            style={tabButtonStyle("profile")}
-            onClick={() => setActiveTab("profile")}
-          >
-            Profile
-          </button>
+        html,
+        body {
+          margin: 0;
+          padding: 0;
+          background: #eff6ff;
+          color: #0f172a;
+          font-family: Inter, Arial, sans-serif;
+        }
+
+        button,
+        input,
+        select {
+          font: inherit;
+        }
+
+        .app-shell {
+          min-height: 100vh;
+          background:
+            radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 35%, #f8fbff 72%, #ffffff 100%);
+          padding: 16px 14px 110px;
+        }
+
+        .container {
+          max-width: 1180px;
+          margin: 0 auto;
+        }
+
+        .desktop-nav {
+          display: none;
+          gap: 10px;
+          flex-wrap: wrap;
+          margin-bottom: 18px;
+        }
+
+        .nav-chip {
+          border: 1px solid #d7e3f3;
+          background: #ffffff;
+          color: #0f172a;
+          padding: 10px 14px;
+          border-radius: 14px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: 0.2s ease;
+        }
+
+        .nav-chip.active {
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+          border-color: #2563eb;
+          color: #fff;
+          box-shadow: 0 10px 22px rgba(37, 99, 235, 0.2);
+        }
+
+        .mobile-bottom-nav {
+          position: fixed;
+          left: 12px;
+          right: 12px;
+          bottom: 12px;
+          z-index: 60;
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 8px;
+          background: rgba(255, 255, 255, 0.96);
+          backdrop-filter: blur(12px);
+          border: 1px solid #dbe7f5;
+          border-radius: 22px;
+          padding: 10px;
+          box-shadow: 0 18px 50px rgba(15, 23, 42, 0.14);
+        }
+
+        .mobile-nav-btn {
+          border: none;
+          background: transparent;
+          border-radius: 14px;
+          padding: 10px 6px;
+          color: #475569;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .mobile-nav-btn.active {
+          background: #e8f0ff;
+          color: #1d4ed8;
+        }
+
+        .hero {
+          background: linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%);
+          color: white;
+          border-radius: 24px;
+          padding: 20px;
+          box-shadow: 0 18px 40px rgba(29, 78, 216, 0.22);
+          margin-bottom: 18px;
+        }
+
+        .hero-kicker {
+          margin: 0 0 8px;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          opacity: 0.8;
+          font-weight: 700;
+        }
+
+        .hero-title {
+          margin: 0;
+          font-size: 34px;
+          line-height: 1.02;
+          font-weight: 900;
+        }
+
+        .hero-subtitle {
+          margin: 12px 0 0;
+          max-width: 760px;
+          color: rgba(255, 255, 255, 0.9);
+          font-size: 14px;
+          line-height: 1.5;
+        }
+
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
+          margin-top: 18px;
+        }
+
+        .stat-box {
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 16px;
+          padding: 14px;
+        }
+
+        .stat-label {
+          margin: 0;
+          font-size: 12px;
+          opacity: 0.75;
+        }
+
+        .stat-value {
+          margin: 8px 0 0;
+          font-size: 22px;
+          font-weight: 900;
+        }
+
+        .grid-3,
+        .grid-2,
+        .stack {
+          display: grid;
+          gap: 16px;
+        }
+
+        .card {
+          background: rgba(255, 255, 255, 0.96);
+          border: 1px solid #e5edf7;
+          border-radius: 22px;
+          padding: 18px;
+          box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+        }
+
+        .card-title {
+          margin: 0;
+          font-size: 26px;
+          line-height: 1.1;
+        }
+
+        .card-subtitle {
+          margin: 8px 0 0;
+          color: #64748b;
+          font-size: 14px;
+          line-height: 1.5;
+        }
+
+        .muted {
+          color: #64748b;
+        }
+
+        .label {
+          margin: 0 0 8px;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.7px;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+
+        .field,
+        .select {
+          width: 100%;
+          border: 1px solid #dbe6f2;
+          background: #fff;
+          color: #0f172a;
+          border-radius: 14px;
+          padding: 13px 14px;
+          outline: none;
+        }
+
+        .btn {
+          border: none;
+          border-radius: 14px;
+          padding: 13px 16px;
+          font-weight: 800;
+          cursor: pointer;
+          transition: 0.2s ease;
+        }
+
+        .btn:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+
+        .btn-primary {
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+          color: white;
+          box-shadow: 0 10px 20px rgba(37, 99, 235, 0.18);
+        }
+
+        .btn-dark {
+          background: #0f172a;
+          color: white;
+        }
+
+        .btn-light {
+          background: #fff;
+          border: 1px solid #d7e3f3;
+          color: #0f172a;
+        }
+
+        .btn-danger {
+          background: #dc2626;
+          color: white;
+        }
+
+        .btn-success {
+          background: #22c55e;
+          color: white;
+        }
+
+        .button-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+
+        .offer-card {
+          border: 1px solid #e4edf5;
+          border-radius: 20px;
+          padding: 16px;
+          background: #f9fbff;
+        }
+
+        .offer-head {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+          margin-bottom: 12px;
+        }
+
+        .offer-name {
+          margin: 0;
+          font-size: 22px;
+          font-weight: 900;
+          color: #111827;
+        }
+
+        .badge {
+          padding: 6px 10px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 800;
+        }
+
+        .badge.info {
+          background: #dbeafe;
+          color: #1d4ed8;
+        }
+
+        .badge.success {
+          background: #dcfce7;
+          color: #15803d;
+        }
+
+        .badge.neutral {
+          background: #f1f5f9;
+          color: #475569;
+        }
+
+        .offer-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-bottom: 12px;
+        }
+
+        .mini-box {
+          background: #fff;
+          border: 1px solid #edf2f7;
+          border-radius: 14px;
+          padding: 12px;
+        }
+
+        .mini-label {
+          margin: 0;
+          font-size: 10px;
+          font-weight: 800;
+          color: #64748b;
+          text-transform: uppercase;
+          letter-spacing: 0.7px;
+        }
+
+        .mini-value {
+          margin: 8px 0 0;
+          font-size: 15px;
+          font-weight: 900;
+          color: #0f172a;
+          line-height: 1.3;
+          word-break: break-word;
+        }
+
+        .offer-actions {
+          display: grid;
+          gap: 10px;
+        }
+
+        .small-actions {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          margin-top: 10px;
+        }
+
+        .empty-state,
+        .loading-state {
+          border: 1px dashed #d1d9e5;
+          border-radius: 18px;
+          padding: 22px;
+          background: #f9fbff;
+          color: #64748b;
+          text-align: center;
+        }
+
+        .info-strip {
+          background: #eff6ff;
+          border: 1px solid #bfdbfe;
+          color: #1d4ed8;
+          border-radius: 16px;
+          padding: 14px;
+        }
+
+        .warning-strip {
+          background: #fff7ed;
+          border: 1px solid #fed7aa;
+          color: #9a3412;
+          border-radius: 14px;
+          padding: 12px;
+          font-size: 13px;
+          font-weight: 700;
+          text-align: center;
+        }
+
+        .preview-box {
+          background: linear-gradient(135deg, #eef2ff, #f8fafc);
+          border: 1px solid #c7d2fe;
+          border-radius: 16px;
+          padding: 16px;
+          color: #312e81;
+        }
+
+        .section-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          flex-wrap: wrap;
+          margin-bottom: 14px;
+        }
+
+        .notice {
+          position: fixed;
+          top: 14px;
+          right: 14px;
+          z-index: 100;
+          max-width: calc(100vw - 28px);
+          padding: 12px 14px;
+          border-radius: 14px;
+          color: #fff;
+          font-size: 14px;
+          font-weight: 800;
+          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+        }
+
+        .notice.success {
+          background: #16a34a;
+        }
+
+        .notice.error {
+          background: #dc2626;
+        }
+
+        .top-space {
+          margin-top: 8px;
+        }
+
+        @media (min-width: 768px) {
+          .app-shell {
+            padding: 24px 18px 36px;
+          }
+
+          .desktop-nav {
+            display: flex;
+          }
+
+          .mobile-bottom-nav {
+            display: none;
+          }
+
+          .hero {
+            padding: 28px;
+            border-radius: 28px;
+          }
+
+          .hero-title {
+            font-size: 52px;
+          }
+
+          .hero-subtitle {
+            font-size: 17px;
+          }
+
+          .stats-grid {
+            grid-template-columns: repeat(4, 1fr);
+          }
+
+          .grid-3 {
+            grid-template-columns: repeat(3, 1fr);
+          }
+
+          .grid-2 {
+            grid-template-columns: 1.1fr 1fr;
+          }
+
+          .offer-card {
+            padding: 18px;
+          }
+
+          .offer-main-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 18px;
+            align-items: start;
+          }
+        }
+      `}</style>
+
+      {notice && (
+        <div className={`notice ${notice.type}`}>
+          {notice.text}
         </div>
-        {activeTab === "home" && (
-          <div style={{ display: "grid", gap: 20 }}>
-            <div style={heroStyle}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 20,
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                }}
-              >
-                <div style={{ maxWidth: 720 }}>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: 12,
-                      textTransform: "uppercase",
-                      letterSpacing: 1,
-                      opacity: 0.85,
-                      fontWeight: 700,
-                    }}
-                  >
-                    Secure FX Discovery
-                  </p>
+      )}
 
-                  <h1
-                    style={{
-                      margin: "10px 0 12px",
-                      fontSize: 50,
-                      lineHeight: 1.02,
-                    }}
-                  >
-                    P2P FX Marketplace
-                  </h1>
+      <div className="container">
+        <div className="desktop-nav">
+          <NavButton id="home" label="Home" />
+          <NavButton id="market" label="Marketplace" />
+          <NavButton id="listings" label="My Listings" />
+          <NavButton id="contacts" label="Contacts" />
+          <NavButton id="profile" label="Profile" />
+        </div>
 
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: 17,
-                      maxWidth: 760,
-                      color: "rgba(255,255,255,0.88)",
-                    }}
-                  >
-                    Discover live foreign exchange offers, unlock verified seller
-                    contacts with coins, and manage your own listings in one
-                    clean marketplace.
-                  </p>
-                </div>
+        <section className="hero">
+          <p className="hero-kicker">Secure FX Discovery</p>
+          <h1 className="hero-title">P2P FX Marketplace</h1>
+          <p className="hero-subtitle">
+            Discover live foreign exchange offers, unlock trusted seller contacts,
+            manage your own listings, and keep your trading flow organized in one
+            clean mobile-friendly marketplace.
+          </p>
 
-                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                  <div style={statBox}>
-                    <p style={{ margin: 0, opacity: 0.75, fontSize: 13 }}>
-                      Live Offers
-                    </p>
-                    <p style={{ margin: "8px 0 0", fontWeight: 800, fontSize: 24 }}>
-                      {offers.length}
-                    </p>
-                  </div>
-
-                  <div style={statBox}>
-                    <p style={{ margin: 0, opacity: 0.75, fontSize: 13 }}>
-                      My Listings
-                    </p>
-                    <p style={{ margin: "8px 0 0", fontWeight: 800, fontSize: 24 }}>
-                      {myOffers.length}
-                    </p>
-                  </div>
-
-                  <div style={statBox}>
-                    <p style={{ margin: 0, opacity: 0.75, fontSize: 13 }}>Coins</p>
-                    <p style={{ margin: "8px 0 0", fontWeight: 800, fontSize: 24 }}>
-                      {session ? Number(profile?.coins || 0) : "-"}
-                    </p>
-                  </div>
-                </div>
-              </div>
+          <div className="stats-grid">
+            <div className="stat-box">
+              <p className="stat-label">Live Offers</p>
+              <p className="stat-value">{stats.liveOffers}</p>
             </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-                gap: 18,
-              }}
-            >
-              <div style={cardStyle}>
-                <h2 style={{ margin: "0 0 10px", fontSize: 26 }}>How it works</h2>
-                <div style={{ display: "grid", gap: 10, color: "#475569" }}>
-                  <p style={{ margin: 0 }}>1. Browse live FX offers in the marketplace.</p>
-                  <p style={{ margin: 0 }}>
-                    2. Unlock seller contact details using coins.
-                  </p>
-                  <p style={{ margin: 0 }}>
-                    3. Chat directly and complete your exchange securely.
-                  </p>
-                </div>
+            <div className="stat-box">
+              <p className="stat-label">My Listings</p>
+              <p className="stat-value">{stats.myListings}</p>
+            </div>
+            <div className="stat-box">
+              <p className="stat-label">Unlocked Contacts</p>
+              <p className="stat-value">{stats.contacts}</p>
+            </div>
+            <div className="stat-box">
+              <p className="stat-label">Credits</p>
+              <p className="stat-value">{session ? stats.credits : "-"}</p>
+            </div>
+          </div>
+        </section>
+        {activeTab === "home" && (
+          <div className="stack">
+            <div className="grid-3">
+              <div className="card">
+                <h2 className="card-title">How it works</h2>
+                <p className="card-subtitle">
+                  Browse live offers, unlock seller contacts with credits, and chat
+                  directly to complete your exchange.
+                </p>
               </div>
 
-              <div style={cardStyle}>
-                <h2 style={{ margin: "0 0 10px", fontSize: 26 }}>Why use it</h2>
-                <div style={{ display: "grid", gap: 10, color: "#475569" }}>
-                  <p style={{ margin: 0 }}>• Public marketplace with live listings</p>
-                  <p style={{ margin: 0 }}>• Seller trust badges and clear rates</p>
-                  <p style={{ margin: 0 }}>• Contact protection until unlock</p>
-                  <p style={{ margin: 0 }}>• Dedicated listings and contacts pages</p>
-                </div>
+              <div className="card">
+                <h2 className="card-title">Why use it</h2>
+                <p className="card-subtitle">
+                  Public listings, trust badges, hidden contact details until unlock,
+                  and a cleaner way to discover FX rates.
+                </p>
               </div>
 
-              <div style={cardStyle}>
-                <h2 style={{ margin: "0 0 10px", fontSize: 26 }}>For sellers</h2>
-                <div style={{ display: "grid", gap: 10, color: "#475569" }}>
-                  <p style={{ margin: 0 }}>• Post your rates and available amount</p>
-                  <p style={{ margin: 0 }}>• Manage listings from My Listings</p>
-                  <p style={{ margin: 0 }}>• Edit or remove offers anytime</p>
-                </div>
+              <div className="card">
+                <h2 className="card-title">For sellers</h2>
+                <p className="card-subtitle">
+                  Post your rates, manage listings in one place, edit offers anytime,
+                  and get found by serious buyers.
+                </p>
               </div>
             </div>
 
             {!session && (
-              <div style={cardStyle}>
-                <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>Get started</h2>
+              <div className="card">
+                <h2 className="card-title">Get started</h2>
+                <p className="card-subtitle">
+                  Create an account or log in to unlock contacts and manage listings.
+                </p>
 
-                <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+                <div className="button-row top-space">
                   <button
-                    style={authMode === "signup" ? primaryButton : darkButton}
+                    className={`btn ${
+                      authMode === "signup" ? "btn-primary" : "btn-dark"
+                    }`}
                     onClick={() => setAuthMode("signup")}
+                    type="button"
                   >
                     Sign Up
                   </button>
                   <button
-                    style={authMode === "login" ? primaryButton : darkButton}
+                    className={`btn ${
+                      authMode === "login" ? "btn-primary" : "btn-dark"
+                    }`}
                     onClick={() => setAuthMode("login")}
+                    type="button"
                   >
                     Login
                   </button>
                 </div>
 
-                <div style={{ display: "grid", gap: 12 }}>
+                <div className="stack top-space">
                   <input
-                    style={inputStyle}
+                    className="field"
                     placeholder="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
-
                   <input
-                    style={inputStyle}
-                    type="password"
+                    className="field"
                     placeholder="Password"
+                    type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
-
                   <button
-                    style={{
-                      ...primaryButton,
-                      opacity: authLoading ? 0.7 : 1,
-                      cursor: authLoading ? "not-allowed" : "pointer",
-                    }}
+                    className="btn btn-primary"
                     onClick={handleAuth}
                     disabled={authLoading}
+                    type="button"
                   >
                     {authLoading
                       ? "Loading..."
@@ -926,43 +1208,29 @@ export default function Home() {
               </div>
             )}
 
-            <div style={cardStyle}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                  marginBottom: 16,
-                }}
-              >
+            <div className="card">
+              <div className="section-row">
                 <div>
-                  <h2 style={{ margin: 0, fontSize: 30 }}>Marketplace Preview</h2>
-                  <p style={{ margin: "6px 0 0", color: "#64748b" }}>
-                    Browse public offers before you decide to log in.
+                  <h2 className="card-title">Marketplace Preview</h2>
+                  <p className="card-subtitle">
+                    Public users can browse live offers before logging in.
                   </p>
                 </div>
-
-                <button style={secondaryButton} onClick={() => setActiveTab("market")}>
+                <button
+                  className="btn btn-light"
+                  onClick={() => setActiveTab("market")}
+                  type="button"
+                >
                   Open Marketplace
                 </button>
               </div>
 
-              {offers.length === 0 ? (
-                <div
-                  style={{
-                    border: "1px dashed #d1d5db",
-                    borderRadius: 16,
-                    padding: 20,
-                    color: "#6b7280",
-                    background: "#f9fafb",
-                  }}
-                >
-                  No live offers yet.
-                </div>
+              {offersLoading ? (
+                <div className="loading-state">Loading live offers...</div>
+              ) : offers.length === 0 ? (
+                <div className="empty-state">No live offers yet.</div>
               ) : (
-                <div style={{ display: "grid", gap: 12 }}>
+                <div className="stack">
                   {offers.slice(0, 3).map((offer) => {
                     const total = calculateConvertedAmount(
                       offer.amount,
@@ -970,47 +1238,29 @@ export default function Home() {
                       offer.from_currency,
                       offer.to_currency
                     );
+                    const badge = sellerBadge(offer.user_id);
 
                     return (
-                      <div
-                        key={offer.id}
-                        style={{
-                          border: "1px solid #e5e7eb",
-                          borderRadius: 16,
-                          padding: 16,
-                          background: "#f9fafb",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            gap: 12,
-                            alignItems: "center",
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <div>
-                            <p style={{ margin: 0, fontWeight: 800, fontSize: 20 }}>
-                              {offer.name}
-                            </p>
-                            <p style={{ margin: "6px 0 0", color: "#475569" }}>
-                              {offer.amount.toLocaleString()} {offer.from_currency} →{" "}
-                              {total.toFixed(2)} {offer.to_currency}
+                      <div className="offer-card" key={offer.id}>
+                        <div className="offer-head">
+                          <p className="offer-name">{offer.name}</p>
+                          <span className={`badge ${badge.tone}`}>{badge.text}</span>
+                          <span className="badge info">
+                            {offer.from_currency} → {offer.to_currency}
+                          </span>
+                        </div>
+                        <div className="offer-grid">
+                          <div className="mini-box">
+                            <p className="mini-label">Amount</p>
+                            <p className="mini-value">
+                              {offer.amount.toLocaleString()} {offer.from_currency}
                             </p>
                           </div>
-
-                          <div
-                            style={{
-                              padding: "8px 12px",
-                              borderRadius: 999,
-                              background: "#dcfce7",
-                              color: "#15803d",
-                              fontSize: 12,
-                              fontWeight: 800,
-                            }}
-                          >
-                            {sellerBadge(offer.user_id)}
+                          <div className="mini-box">
+                            <p className="mini-label">Total</p>
+                            <p className="mini-value">
+                              {total.toFixed(2)} {offer.to_currency}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -1023,103 +1273,75 @@ export default function Home() {
         )}
 
         {activeTab === "market" && (
-          <div style={cardStyle}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: 12,
-                flexWrap: "wrap",
-                marginBottom: 18,
-              }}
-            >
-              <div>
-                <h2 style={{ margin: 0, fontSize: 32 }}>Marketplace</h2>
-                <p style={{ margin: "6px 0 0", color: "#6b7280" }}>
-                  {filteredOffers.length} live offer{filteredOffers.length === 1 ? "" : "s"}
-                </p>
+          <div className="stack">
+            <div className="card">
+              <div className="section-row">
+                <div>
+                  <h2 className="card-title">Marketplace</h2>
+                  <p className="card-subtitle">
+                    {sortedFilteredOffers.length} live offer
+                    {sortedFilteredOffers.length === 1 ? "" : "s"} available.
+                  </p>
+                </div>
+                <span className="badge neutral">Public Listings</span>
               </div>
 
-              <div
-                style={{
-                  background: "#f1f5f9",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: 999,
-                  padding: "8px 12px",
-                  fontSize: 13,
-                  color: "#334155",
-                  fontWeight: 700,
-                }}
-              >
-                Public listings
-              </div>
-            </div>
+              <div className="stack">
+                <input
+                  className="field"
+                  placeholder="Search by name, phone, or currency"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
 
-            <div style={{ display: "grid", gap: 12, marginBottom: 18 }}>
-              <input
-                style={inputStyle}
-                placeholder="Search by name, phone, or currency"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+                <div className="button-row">
+                  <select
+                    className="select"
+                    value={filterFrom}
+                    onChange={(e) => setFilterFrom(e.target.value)}
+                  >
+                    <option value="ALL">All From</option>
+                    <option value="TZS">TZS</option>
+                    <option value="GBP">GBP</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                  </select>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 12,
-                }}
-              >
-                <select
-                  style={inputStyle}
-                  value={filterFrom}
-                  onChange={(e) => setFilterFrom(e.target.value)}
-                >
-                  <option value="ALL">All From</option>
-                  <option value="TZS">TZS</option>
-                  <option value="GBP">GBP</option>
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                </select>
+                  <select
+                    className="select"
+                    value={filterTo}
+                    onChange={(e) => setFilterTo(e.target.value)}
+                  >
+                    <option value="ALL">All To</option>
+                    <option value="GBP">GBP</option>
+                    <option value="TZS">TZS</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                  </select>
+                </div>
 
                 <select
-                  style={inputStyle}
-                  value={filterTo}
-                  onChange={(e) => setFilterTo(e.target.value)}
+                  className="select"
+                  value={sortMode}
+                  onChange={(e) => setSortMode(e.target.value as SortMode)}
                 >
-                  <option value="ALL">All To</option>
-                  <option value="GBP">GBP</option>
-                  <option value="TZS">TZS</option>
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
+                  <option value="newest">Sort: Newest</option>
+                  <option value="best_rate">Sort: Best Rate</option>
                 </select>
               </div>
             </div>
 
-            {filteredOffers.length === 0 ? (
-              <div
-                style={{
-                  border: "1px dashed #d1d5db",
-                  borderRadius: 16,
-                  padding: 26,
-                  color: "#6b7280",
-                  background: "#f9fafb",
-                  textAlign: "center",
-                }}
-              >
-                No offers found.
-              </div>
+            {offersLoading ? (
+              <div className="loading-state">Loading marketplace...</div>
+            ) : sortedFilteredOffers.length === 0 ? (
+              <div className="empty-state">No offers found.</div>
             ) : (
-              <div style={{ display: "grid", gap: 14 }}>
-                {filteredOffers.map((offer) => {
+              <div className="stack">
+                {sortedFilteredOffers.map((offer) => {
                   const isOwner = offer.user_id === session?.user?.id;
                   const isUnlocked = unlockedOfferIds.includes(offer.id);
                   const canSeeFullContact = isOwner || isUnlocked;
-
-                  const message = encodeURIComponent(
-                    `Hi ${offer.name}, I'm interested in your ${offer.from_currency} to ${offer.to_currency} offer on P2P FX Marketplace.`
-                  );
+                  const badge = sellerBadge(offer.user_id);
 
                   const total = calculateConvertedAmount(
                     offer.amount,
@@ -1128,225 +1350,113 @@ export default function Home() {
                     offer.to_currency
                   );
 
+                  const message = encodeURIComponent(
+                    `Hi ${offer.name}, I'm interested in your ${offer.from_currency} to ${offer.to_currency} offer on P2P FX Marketplace.`
+                  );
+
                   return (
-                    <div
-                      key={offer.id}
-                      style={{
-                        border: "1px solid #e5e7eb",
-                        borderRadius: 18,
-                        padding: 18,
-                        background: "#f9fafb",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "start",
-                          gap: 16,
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <div style={{ flex: 1, minWidth: 220 }}>
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: 10,
-                              alignItems: "center",
-                              flexWrap: "wrap",
-                              marginBottom: 10,
-                            }}
-                          >
-                            <p
-                              style={{
-                                margin: 0,
-                                fontWeight: 800,
-                                fontSize: 24,
-                                color: "#111827",
-                              }}
-                            >
-                              {offer.name}
-                            </p>
-
-                            <span
-                              style={{
-                                padding: "6px 10px",
-                                borderRadius: 999,
-                                background: "#dcfce7",
-                                color: "#15803d",
-                                fontSize: 12,
-                                fontWeight: 800,
-                              }}
-                            >
-                              {sellerBadge(offer.user_id)}
-                            </span>
-
-                            <span
-                              style={{
-                                padding: "6px 10px",
-                                borderRadius: 999,
-                                background: "#dbeafe",
-                                color: "#1d4ed8",
-                                fontSize: 12,
-                                fontWeight: 800,
-                              }}
-                            >
+                    <div className="offer-card" key={offer.id}>
+                      <div className="offer-main-row">
+                        <div>
+                          <div className="offer-head">
+                            <p className="offer-name">{offer.name}</p>
+                            <span className={`badge ${badge.tone}`}>{badge.text}</span>
+                            <span className="badge info">
                               {offer.from_currency} → {offer.to_currency}
                             </span>
                           </div>
 
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "1fr 1fr",
-                              gap: 12,
-                            }}
-                          >
-                            <div
-                              style={{
-                                background: "#ffffff",
-                                borderRadius: 14,
-                                padding: 12,
-                                border: "1px solid #edf2f7",
-                              }}
-                            >
-                              <p style={labelStyle}>Amount</p>
-                              <p style={{ margin: "8px 0 0", fontWeight: 800, color: "#0f172a" }}>
+                          <div className="offer-grid">
+                            <div className="mini-box">
+                              <p className="mini-label">Amount</p>
+                              <p className="mini-value">
                                 {offer.amount.toLocaleString()} {offer.from_currency}
                               </p>
                             </div>
 
-                            <div
-                              style={{
-                                background: "#ffffff",
-                                borderRadius: 14,
-                                padding: 12,
-                                border: "1px solid #edf2f7",
-                              }}
-                            >
-                              <p style={labelStyle}>Total</p>
-                              <p style={{ margin: "8px 0 0", fontWeight: 800, color: "#0f172a" }}>
+                            <div className="mini-box">
+                              <p className="mini-label">Total</p>
+                              <p className="mini-value">
                                 {total.toFixed(2)} {offer.to_currency}
                               </p>
                             </div>
 
-                            <div
-                              style={{
-                                background: "#ffffff",
-                                borderRadius: 14,
-                                padding: 12,
-                                border: "1px solid #edf2f7",
-                              }}
-                            >
-                              <p style={labelStyle}>Rate</p>
-                              <p style={{ margin: "8px 0 0", fontWeight: 800, color: "#0f172a" }}>
-                                {offer.rate}
-                              </p>
+                            <div className="mini-box">
+                              <p className="mini-label">Rate</p>
+                              <p className="mini-value">{offer.rate}</p>
                             </div>
 
-                            <div
-                              style={{
-                                background: "#ffffff",
-                                borderRadius: 14,
-                                padding: 12,
-                                border: "1px solid #edf2f7",
-                              }}
-                            >
-                              <p style={labelStyle}>Phone</p>
-                              <p
-                                style={{
-                                  margin: "8px 0 0",
-                                  fontWeight: 800,
-                                  color: canSeeFullContact ? "#0f172a" : "#64748b",
-                                }}
-                              >
-                                {getVisiblePhone(offer)}
-                              </p>
+                            <div className="mini-box">
+                              <p className="mini-label">Phone</p>
+                              <p className="mini-value">{getVisiblePhone(offer)}</p>
                             </div>
                           </div>
-                          {!isOwner && session && (
-                            <div style={{ marginTop: 12, color: "#64748b", fontSize: 13 }}>
-                              Your coins: {Number(profile?.coins || 0)}
+
+                          {isOwner && (
+                            <div className="small-actions">
+                              <button
+                                className="btn btn-primary"
+                                onClick={() => startEditOffer(offer)}
+                                type="button"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="btn btn-danger"
+                                onClick={() => deleteOffer(offer.id)}
+                                disabled={deletingId === offer.id}
+                                type="button"
+                              >
+                                {deletingId === offer.id ? "Deleting..." : "Delete"}
+                              </button>
                             </div>
+                          )}
+
+                          {!isOwner && session && (
+                            <p className="card-subtitle">
+                              Your credits: {Number(profile?.coins || 0)}
+                            </p>
                           )}
                         </div>
 
-                        <div style={{ display: "grid", gap: 10 }}>
+                        <div className="offer-actions">
                           {canSeeFullContact ? (
                             <a
-                              href={`https://wa.me/${String(offer.phone).replace(/\D/g, "")}?text=${message}`}
+                              className="btn btn-success"
+                              href={`https://wa.me/${String(offer.phone).replace(
+                                /\D/g,
+                                ""
+                              )}?text=${message}`}
                               target="_blank"
                               rel="noreferrer"
-                              style={{
-                                display: "inline-block",
-                                padding: "12px 16px",
-                                background: "#22c55e",
-                                color: "#fff",
-                                borderRadius: 14,
-                                textDecoration: "none",
-                                fontWeight: 800,
-                                whiteSpace: "nowrap",
-                                boxShadow: "0 10px 20px rgba(34,197,94,0.18)",
-                              }}
                             >
                               Chat on WhatsApp
                             </a>
                           ) : !session ? (
                             <button
+                              className="btn btn-primary"
                               onClick={() => setActiveTab("home")}
-                              style={{
-                                padding: "12px 16px",
-                                background: "#2563eb",
-                                color: "#fff",
-                                borderRadius: 14,
-                                border: "none",
-                                fontWeight: 800,
-                                cursor: "pointer",
-                                whiteSpace: "nowrap",
-                              }}
+                              type="button"
                             >
                               Login to unlock
                             </button>
                           ) : (
                             <button
+                              className="btn btn-dark"
                               onClick={() => unlockContact(offer)}
                               disabled={unlockingId === offer.id}
-                              style={{
-                                padding: "12px 16px",
-                                background:
-                                  Number(profile?.coins || 0) >= UNLOCK_COST
-                                    ? "#0f172a"
-                                    : "#94a3b8",
-                                color: "#fff",
-                                borderRadius: 14,
-                                border: "none",
-                                fontWeight: 800,
-                                cursor: unlockingId === offer.id ? "not-allowed" : "pointer",
-                                opacity: unlockingId === offer.id ? 0.7 : 1,
-                                whiteSpace: "nowrap",
-                              }}
+                              type="button"
                             >
                               {unlockingId === offer.id
                                 ? "Unlocking..."
                                 : Number(profile?.coins || 0) >= UNLOCK_COST
-                                ? `Unlock Contact (${UNLOCK_COST} coins)`
-                                : `Need ${UNLOCK_COST} coins`}
+                                ? `Unlock Contact (${UNLOCK_COST} credits)`
+                                : `Need ${UNLOCK_COST} credits`}
                             </button>
                           )}
 
                           {!canSeeFullContact && (
-                            <div
-                              style={{
-                                padding: "10px 12px",
-                                borderRadius: 12,
-                                background: "#fff7ed",
-                                border: "1px solid #fed7aa",
-                                color: "#9a3412",
-                                fontSize: 13,
-                                fontWeight: 700,
-                                textAlign: "center",
-                              }}
-                            >
+                            <div className="warning-strip">
                               Contact hidden until unlock
                             </div>
                           )}
@@ -1359,61 +1469,37 @@ export default function Home() {
             )}
           </div>
         )}
-
         {activeTab === "listings" && (
-          <div style={{ display: "grid", gap: 20 }}>
+          <div className="stack">
             {session ? (
               <>
-                <div style={cardStyle}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 12,
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                      marginBottom: 16,
-                    }}
-                  >
+                <div className="card">
+                  <div className="section-row">
                     <div>
-                      <h2 style={{ margin: 0, fontSize: 30 }}>My Listings</h2>
-                      <p style={{ margin: "6px 0 0", color: "#64748b" }}>
-                        Create and manage your own marketplace offers here.
+                      <h2 className="card-title">My Listings</h2>
+                      <p className="card-subtitle">
+                        Create and manage your own marketplace offers.
                       </p>
                     </div>
+                    <span className="badge neutral">
+                      {myOffers.length} active
+                    </span>
                   </div>
 
-                  <div
-                    style={{
-                      background: "#f8fafc",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: 16,
-                      padding: 14,
-                      marginBottom: 14,
-                    }}
-                  >
-                    <p style={{ margin: 0, color: "#475569", fontSize: 14 }}>
-                      Posting as <strong>{profile?.name || "No profile name"}</strong>
-                    </p>
-                    <p style={{ margin: "6px 0 0", color: "#475569", fontSize: 14 }}>
-                      Phone: <strong>{profile?.phone || "No profile phone"}</strong>
-                    </p>
+                  <div className="info-strip">
+                    Posting as <strong>{profile?.name || "No profile name"}</strong>
+                    <br />
+                    Phone: <strong>{profile?.phone || "No profile phone"}</strong>
                   </div>
 
-                  <div style={{ display: "grid", gap: 12 }}>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr 1fr",
-                        gap: 12,
-                      }}
-                    >
+                  <div className="stack top-space">
+                    <div className="button-row">
                       <div>
-                        <p style={labelStyle}>From</p>
+                        <p className="label">From</p>
                         <select
-                          style={inputStyle}
-                          value={fromCurrency}
-                          onChange={(e) => setFromCurrency(e.target.value)}
+                          className="select"
+                          value={listingFromCurrency}
+                          onChange={(e) => setListingFromCurrency(e.target.value)}
                         >
                           <option>TZS</option>
                           <option>GBP</option>
@@ -1423,11 +1509,11 @@ export default function Home() {
                       </div>
 
                       <div>
-                        <p style={labelStyle}>To</p>
+                        <p className="label">To</p>
                         <select
-                          style={inputStyle}
-                          value={toCurrency}
-                          onChange={(e) => setToCurrency(e.target.value)}
+                          className="select"
+                          value={listingToCurrency}
+                          onChange={(e) => setListingToCurrency(e.target.value)}
                         >
                           <option>GBP</option>
                           <option>TZS</option>
@@ -1438,84 +1524,56 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <p style={labelStyle}>Rate</p>
+                      <p className="label">Rate</p>
                       <input
-                        style={inputStyle}
+                        className="field"
                         type="number"
                         placeholder="Rate"
-                        value={rate}
-                        onChange={(e) => setRate(e.target.value)}
+                        value={listingRate}
+                        onChange={(e) => setListingRate(e.target.value)}
                       />
                     </div>
 
                     <div>
-                      <p style={labelStyle}>Amount</p>
+                      <p className="label">Amount</p>
                       <input
-                        style={inputStyle}
+                        className="field"
                         type="number"
                         placeholder="Amount"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
+                        value={listingAmount}
+                        onChange={(e) => setListingAmount(e.target.value)}
                       />
                     </div>
 
-                    <div
-                      style={{
-                        background: "linear-gradient(135deg, #eef2ff, #f8fafc)",
-                        border: "1px solid #c7d2fe",
-                        borderRadius: 16,
-                        padding: 16,
-                        color: "#312e81",
-                      }}
-                    >
-                      <p
-                        style={{
-                          margin: "0 0 8px",
-                          fontSize: 12,
-                          fontWeight: 700,
-                          letterSpacing: 0.6,
-                          textTransform: "uppercase",
-                          color: "#4338ca",
-                        }}
-                      >
-                        Live Preview
-                      </p>
-
-                      <p style={{ margin: 0, fontWeight: 800, fontSize: 20 }}>
-                        {numAmount} {fromCurrency} → {previewTotal.toFixed(2)} {toCurrency}
-                      </p>
+                    <div className="preview-box">
+                      <p className="label">Live Preview</p>
+                      <div style={{ fontWeight: 900, fontSize: 20 }}>
+                        {Number(listingAmount || 0)} {listingFromCurrency} →{" "}
+                        {listingPreview.toFixed(2)} {listingToCurrency}
+                      </div>
                     </div>
 
                     <button
-                      style={{
-                        ...primaryButton,
-                        opacity: posting ? 0.7 : 1,
-                        cursor: posting ? "not-allowed" : "pointer",
-                      }}
+                      className="btn btn-primary"
                       onClick={postOffer}
                       disabled={posting}
+                      type="button"
                     >
-                      {posting ? "Posting..." : "Create Offer"}
+                      {posting ? "Creating..." : "Create Listing"}
                     </button>
                   </div>
                 </div>
 
                 {editingOfferId && (
-                  <div style={cardStyle}>
-                    <h2 style={{ margin: "0 0 16px", fontSize: 28 }}>Edit Listing</h2>
+                  <div className="card">
+                    <h2 className="card-title">Edit Listing</h2>
 
-                    <div style={{ display: "grid", gap: 12 }}>
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "1fr 1fr",
-                          gap: 12,
-                        }}
-                      >
+                    <div className="stack top-space">
+                      <div className="button-row">
                         <div>
-                          <p style={labelStyle}>From</p>
+                          <p className="label">From</p>
                           <select
-                            style={inputStyle}
+                            className="select"
                             value={editFromCurrency}
                             onChange={(e) => setEditFromCurrency(e.target.value)}
                           >
@@ -1527,9 +1585,9 @@ export default function Home() {
                         </div>
 
                         <div>
-                          <p style={labelStyle}>To</p>
+                          <p className="label">To</p>
                           <select
-                            style={inputStyle}
+                            className="select"
                             value={editToCurrency}
                             onChange={(e) => setEditToCurrency(e.target.value)}
                           >
@@ -1542,9 +1600,9 @@ export default function Home() {
                       </div>
 
                       <div>
-                        <p style={labelStyle}>Rate</p>
+                        <p className="label">Rate</p>
                         <input
-                          style={inputStyle}
+                          className="field"
                           type="number"
                           value={editRate}
                           onChange={(e) => setEditRate(e.target.value)}
@@ -1552,56 +1610,37 @@ export default function Home() {
                       </div>
 
                       <div>
-                        <p style={labelStyle}>Amount</p>
+                        <p className="label">Amount</p>
                         <input
-                          style={inputStyle}
+                          className="field"
                           type="number"
                           value={editAmount}
                           onChange={(e) => setEditAmount(e.target.value)}
                         />
                       </div>
 
-                      <div
-                        style={{
-                          background: "linear-gradient(135deg, #eef2ff, #f8fafc)",
-                          border: "1px solid #c7d2fe",
-                          borderRadius: 16,
-                          padding: 16,
-                          color: "#312e81",
-                        }}
-                      >
-                        <p
-                          style={{
-                            margin: "0 0 8px",
-                            fontSize: 12,
-                            fontWeight: 700,
-                            letterSpacing: 0.6,
-                            textTransform: "uppercase",
-                            color: "#4338ca",
-                          }}
-                        >
-                          Edit Preview
-                        </p>
-
-                        <p style={{ margin: 0, fontWeight: 800, fontSize: 20 }}>
-                          {Number(editAmount || 0)} {editFromCurrency} → {editPreviewTotal.toFixed(2)} {editToCurrency}
-                        </p>
+                      <div className="preview-box">
+                        <p className="label">Edit Preview</p>
+                        <div style={{ fontWeight: 900, fontSize: 20 }}>
+                          {Number(editAmount || 0)} {editFromCurrency} →{" "}
+                          {editPreview.toFixed(2)} {editToCurrency}
+                        </div>
                       </div>
 
-                      <div style={{ display: "flex", gap: 10 }}>
+                      <div className="button-row">
                         <button
-                          style={{
-                            ...primaryButton,
-                            opacity: updatingOffer ? 0.7 : 1,
-                            cursor: updatingOffer ? "not-allowed" : "pointer",
-                          }}
+                          className="btn btn-primary"
                           onClick={updateOffer}
                           disabled={updatingOffer}
+                          type="button"
                         >
-                          {updatingOffer ? "Updating..." : "Save Changes"}
+                          {updatingOffer ? "Saving..." : "Save Changes"}
                         </button>
-
-                        <button style={secondaryButton} onClick={cancelEditOffer}>
+                        <button
+                          className="btn btn-light"
+                          onClick={cancelEditOffer}
+                          type="button"
+                        >
                           Cancel
                         </button>
                       </div>
@@ -1609,23 +1648,18 @@ export default function Home() {
                   </div>
                 )}
 
-                <div style={cardStyle}>
-                  <h2 style={{ margin: "0 0 16px", fontSize: 28 }}>Your Active Listings</h2>
+                <div className="card">
+                  <h2 className="card-title">Your Active Listings</h2>
+                  <p className="card-subtitle">
+                    Edit or remove listings anytime.
+                  </p>
 
                   {myOffers.length === 0 ? (
-                    <div
-                      style={{
-                        border: "1px dashed #d1d5db",
-                        borderRadius: 16,
-                        padding: 20,
-                        color: "#6b7280",
-                        background: "#f9fafb",
-                      }}
-                    >
-                      You have not posted any offers yet.
+                    <div className="empty-state top-space">
+                      You have not posted any listings yet.
                     </div>
                   ) : (
-                    <div style={{ display: "grid", gap: 12 }}>
+                    <div className="stack top-space">
                       {myOffers.map((offer) => {
                         const total = calculateConvertedAmount(
                           offer.amount,
@@ -1635,51 +1669,42 @@ export default function Home() {
                         );
 
                         return (
-                          <div
-                            key={offer.id}
-                            style={{
-                              border: "1px solid #e5e7eb",
-                              borderRadius: 16,
-                              padding: 16,
-                              background: "#f9fafb",
-                            }}
-                          >
-                            <p
-                              style={{
-                                margin: "0 0 8px",
-                                fontWeight: 800,
-                                fontSize: 20,
-                                color: "#111827",
-                              }}
-                            >
-                              {offer.name}
-                            </p>
+                          <div className="offer-card" key={offer.id}>
+                            <div className="offer-head">
+                              <p className="offer-name">{offer.name}</p>
+                              <span className="badge info">
+                                {offer.from_currency} → {offer.to_currency}
+                              </span>
+                            </div>
 
-                            <p style={{ margin: "6px 0", color: "#374151" }}>
-                              {offer.amount.toLocaleString()} {offer.from_currency} →{" "}
-                              {total.toFixed(2)} {offer.to_currency}
-                            </p>
+                            <div className="offer-grid">
+                              <div className="mini-box">
+                                <p className="mini-label">Amount</p>
+                                <p className="mini-value">
+                                  {offer.amount.toLocaleString()} {offer.from_currency}
+                                </p>
+                              </div>
+                              <div className="mini-box">
+                                <p className="mini-label">Total</p>
+                                <p className="mini-value">
+                                  {total.toFixed(2)} {offer.to_currency}
+                                </p>
+                              </div>
+                            </div>
 
-                            <p style={{ margin: "6px 0", color: "#374151" }}>
-                              Rate: {offer.rate}
-                            </p>
-
-                            <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+                            <div className="small-actions">
                               <button
-                                style={smallButton}
+                                className="btn btn-primary"
                                 onClick={() => startEditOffer(offer)}
+                                type="button"
                               >
                                 Edit
                               </button>
-
                               <button
-                                style={{
-                                  ...dangerButton,
-                                  opacity: deletingId === offer.id ? 0.7 : 1,
-                                  cursor: deletingId === offer.id ? "not-allowed" : "pointer",
-                                }}
+                                className="btn btn-danger"
                                 onClick={() => deleteOffer(offer.id)}
                                 disabled={deletingId === offer.id}
+                                type="button"
                               >
                                 {deletingId === offer.id ? "Deleting..." : "Delete"}
                               </button>
@@ -1692,9 +1717,9 @@ export default function Home() {
                 </div>
               </>
             ) : (
-              <div style={cardStyle}>
-                <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>Login Required</h2>
-                <p style={{ margin: 0, color: "#64748b" }}>
+              <div className="card">
+                <h2 className="card-title">Login Required</h2>
+                <p className="card-subtitle">
                   Log in first to create and manage your listings.
                 </p>
               </div>
@@ -1703,54 +1728,27 @@ export default function Home() {
         )}
 
         {activeTab === "contacts" && (
-          <div style={{ display: "grid", gap: 20 }}>
+          <div className="stack">
             {session ? (
-              <div style={cardStyle}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 12,
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                    marginBottom: 16,
-                  }}
-                >
+              <div className="card">
+                <div className="section-row">
                   <div>
-                    <h2 style={{ margin: 0, fontSize: 30 }}>Unlocked Contacts</h2>
-                    <p style={{ margin: "6px 0 0", color: "#64748b" }}>
+                    <h2 className="card-title">Unlocked Contacts</h2>
+                    <p className="card-subtitle">
                       Sellers whose details you have already unlocked.
                     </p>
                   </div>
-
-                  <div
-                    style={{
-                      background: "#eff6ff",
-                      border: "1px solid #bfdbfe",
-                      borderRadius: 14,
-                      padding: "10px 14px",
-                      fontWeight: 800,
-                      color: "#1d4ed8",
-                    }}
-                  >
-                    Coins: {Number(profile?.coins || 0)}
-                  </div>
+                  <span className="badge info">
+                    Credits: {Number(profile?.coins || 0)}
+                  </span>
                 </div>
 
                 {unlockedOffers.length === 0 ? (
-                  <div
-                    style={{
-                      border: "1px dashed #d1d5db",
-                      borderRadius: 16,
-                      padding: 20,
-                      color: "#6b7280",
-                      background: "#f9fafb",
-                    }}
-                  >
+                  <div className="empty-state">
                     You have not unlocked any contacts yet.
                   </div>
                 ) : (
-                  <div style={{ display: "grid", gap: 12 }}>
+                  <div className="stack">
                     {unlockedOffers.map((offer) => {
                       const message = encodeURIComponent(
                         `Hi ${offer.name}, I'm interested in your ${offer.from_currency} to ${offer.to_currency} offer on P2P FX Marketplace.`
@@ -1764,56 +1762,46 @@ export default function Home() {
                       );
 
                       return (
-                        <div
-                          key={offer.id}
-                          style={{
-                            border: "1px solid #e5e7eb",
-                            borderRadius: 16,
-                            padding: 16,
-                            background: "#f9fafb",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              gap: 12,
-                              alignItems: "start",
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            <div>
-                              <p style={{ margin: "0 0 8px", fontWeight: 800, fontSize: 22 }}>
-                                {offer.name}
-                              </p>
-                              <p style={{ margin: "6px 0", color: "#374151" }}>
-                                Pair: {offer.from_currency} → {offer.to_currency}
-                              </p>
-                              <p style={{ margin: "6px 0", color: "#374151" }}>
-                                Amount: {offer.amount.toLocaleString()} {offer.from_currency}
-                              </p>
-                              <p style={{ margin: "6px 0", color: "#374151" }}>
-                                Total: {total.toFixed(2)} {offer.to_currency}
-                              </p>
-                              <p style={{ margin: "6px 0", color: "#374151" }}>
-                                Phone: {offer.phone}
+                        <div className="offer-card" key={offer.id}>
+                          <div className="offer-head">
+                            <p className="offer-name">{offer.name}</p>
+                            <span className="badge info">
+                              {offer.from_currency} → {offer.to_currency}
+                            </span>
+                          </div>
+
+                          <div className="offer-grid">
+                            <div className="mini-box">
+                              <p className="mini-label">Amount</p>
+                              <p className="mini-value">
+                                {offer.amount.toLocaleString()} {offer.from_currency}
                               </p>
                             </div>
+                            <div className="mini-box">
+                              <p className="mini-label">Total</p>
+                              <p className="mini-value">
+                                {total.toFixed(2)} {offer.to_currency}
+                              </p>
+                            </div>
+                            <div className="mini-box">
+                              <p className="mini-label">Rate</p>
+                              <p className="mini-value">{offer.rate}</p>
+                            </div>
+                            <div className="mini-box">
+                              <p className="mini-label">Phone</p>
+                              <p className="mini-value">{offer.phone}</p>
+                            </div>
+                          </div>
 
+                          <div className="top-space">
                             <a
-                              href={`https://wa.me/${String(offer.phone).replace(/\D/g, "")}?text=${message}`}
+                              className="btn btn-success"
+                              href={`https://wa.me/${String(offer.phone).replace(
+                                /\D/g,
+                                ""
+                              )}?text=${message}`}
                               target="_blank"
                               rel="noreferrer"
-                              style={{
-                                display: "inline-block",
-                                padding: "12px 16px",
-                                background: "#22c55e",
-                                color: "#fff",
-                                borderRadius: 14,
-                                textDecoration: "none",
-                                fontWeight: 800,
-                                whiteSpace: "nowrap",
-                              }}
                             >
                               Chat on WhatsApp
                             </a>
@@ -1825,9 +1813,9 @@ export default function Home() {
                 )}
               </div>
             ) : (
-              <div style={cardStyle}>
-                <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>Login Required</h2>
-                <p style={{ margin: 0, color: "#64748b" }}>
+              <div className="card">
+                <h2 className="card-title">Login Required</h2>
+                <p className="card-subtitle">
                   Log in first to view your unlocked contacts.
                 </p>
               </div>
@@ -1836,80 +1824,122 @@ export default function Home() {
         )}
 
         {activeTab === "profile" && (
-          <div style={{ display: "grid", gap: 20 }}>
+          <div className="stack">
             {session ? (
-              <div style={cardStyle}>
-                <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>Profile Setup</h2>
-
-                <div
-                  style={{
-                    background: "#eff6ff",
-                    border: "1px solid #bfdbfe",
-                    borderRadius: 16,
-                    padding: 14,
-                    marginBottom: 16,
-                  }}
-                >
-                  <p style={{ margin: 0, color: "#1d4ed8", fontWeight: 800 }}>
-                    Coins Balance: {Number(profile?.coins || 0)}
+              <>
+                <div className="card">
+                  <h2 className="card-title">Profile</h2>
+                  <p className="card-subtitle">
+                    Manage your identity, phone number, and available credits.
                   </p>
-                  <p style={{ margin: "6px 0 0", color: "#475569", fontSize: 14 }}>
-                    For now, add coins manually in Supabase Table Editor to test unlocks.
-                  </p>
-                </div>
 
-                <div style={{ display: "grid", gap: 12 }}>
-                  <div>
-                    <p style={labelStyle}>Name</p>
-                    <input
-                      style={inputStyle}
-                      placeholder="Your full name"
-                      value={profileName}
-                      onChange={(e) => setProfileName(e.target.value)}
-                    />
+                  <div className="info-strip top-space">
+                    Credits Balance: <strong>{Number(profile?.coins || 0)}</strong>
+                    <br />
+                    Stripe purchase flow can be connected later.
                   </div>
 
-                  <div>
-                    <p style={labelStyle}>Phone</p>
-                    <input
-                      style={inputStyle}
-                      placeholder="Phone with country code, e.g. +255712345678"
-                      value={profilePhone}
-                      onChange={(e) => setProfilePhone(e.target.value)}
-                    />
-                    <p style={{ margin: "8px 0 0", fontSize: 13, color: "#64748b" }}>
-                      Local number? Just type 07... and the app will convert it.
-                    </p>
+                  <div className="stack top-space">
+                    <div>
+                      <p className="label">Name</p>
+                      <input
+                        className="field"
+                        placeholder="Your full name"
+                        value={profileName}
+                        onChange={(e) => setProfileName(e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <p className="label">Phone</p>
+                      <input
+                        className="field"
+                        placeholder="Phone with country code, e.g. +255712345678"
+                        value={profilePhone}
+                        onChange={(e) => setProfilePhone(e.target.value)}
+                      />
+                      <p className="card-subtitle">
+                        Local number? Just type 07... and the app will convert it.
+                      </p>
+                    </div>
+
+                    <button
+                      className="btn btn-primary"
+                      onClick={saveProfile}
+                      disabled={savingProfile}
+                      type="button"
+                    >
+                      {savingProfile ? "Saving..." : "Save Profile"}
+                    </button>
+
+                    <button
+                      className="btn btn-dark"
+                      onClick={logout}
+                      type="button"
+                    >
+                      Logout
+                    </button>
                   </div>
-
-                  <button
-                    style={{
-                      ...primaryButton,
-                      opacity: savingProfile ? 0.7 : 1,
-                      cursor: savingProfile ? "not-allowed" : "pointer",
-                    }}
-                    onClick={saveProfile}
-                    disabled={savingProfile}
-                  >
-                    {savingProfile ? "Saving..." : "Save Profile"}
-                  </button>
-
-                  <button style={darkButton} onClick={logout}>
-                    Logout
-                  </button>
                 </div>
-              </div>
+
+                <div className="card">
+                  <h2 className="card-title">Trust & Safety</h2>
+                  <p className="card-subtitle">
+                    Always confirm rates, identity, and transfer details before
+                    completing any exchange. Keep communication inside verified
+                    contact channels where possible.
+                  </p>
+                </div>
+              </>
             ) : (
-              <div style={cardStyle}>
-                <h2 style={{ margin: "0 0 16px", fontSize: 30 }}>Login Required</h2>
-                <p style={{ margin: 0, color: "#64748b" }}>
-                  Log in first to manage your profile and coins.
+              <div className="card">
+                <h2 className="card-title">Login Required</h2>
+                <p className="card-subtitle">
+                  Log in first to manage your profile and credits.
                 </p>
               </div>
             )}
           </div>
         )}
       </div>
+
+      <nav className="mobile-bottom-nav">
+        <button
+          className={`mobile-nav-btn ${activeTab === "home" ? "active" : ""}`}
+          onClick={() => setActiveTab("home")}
+          type="button"
+        >
+          Home
+        </button>
+        <button
+          className={`mobile-nav-btn ${activeTab === "market" ? "active" : ""}`}
+          onClick={() => setActiveTab("market")}
+          type="button"
+        >
+          Market
+        </button>
+        <button
+          className={`mobile-nav-btn ${activeTab === "listings" ? "active" : ""}`}
+          onClick={() => setActiveTab("listings")}
+          type="button"
+        >
+          Listings
+        </button>
+        <button
+          className={`mobile-nav-btn ${activeTab === "contacts" ? "active" : ""}`}
+          onClick={() => setActiveTab("contacts")}
+          type="button"
+        >
+          Contacts
+        </button>
+        <button
+          className={`mobile-nav-btn ${activeTab === "profile" ? "active" : ""}`}
+          onClick={() => setActiveTab("profile")}
+          type="button"
+        >
+          Profile
+        </button>
+      </nav>
     </main>
   );
 }
