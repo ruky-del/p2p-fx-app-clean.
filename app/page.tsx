@@ -636,7 +636,8 @@ export default function Page() {
 
         button,
         input,
-        select {
+        select,
+        a {
           font: inherit;
         }
 
@@ -684,7 +685,7 @@ export default function Page() {
           bottom: 12px;
           z-index: 60;
           display: grid;
-          grid-template-columns: repeat(5, 1fr);
+          grid-template-columns: repeat(2, 1fr);
           gap: 8px;
           background: rgba(255, 255, 255, 0.96);
           backdrop-filter: blur(12px);
@@ -709,7 +710,6 @@ export default function Page() {
           background: #e8f0ff;
           color: #1d4ed8;
         }
-
         .hero {
           background: linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%);
           color: white;
@@ -743,6 +743,14 @@ export default function Page() {
           line-height: 1.5;
         }
 
+        .hero-small {
+          margin: 10px 0 0;
+          max-width: 760px;
+          font-size: 12px;
+          line-height: 1.5;
+          color: rgba(255, 255, 255, 0.7);
+        }
+
         .stats-grid {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
@@ -770,7 +778,6 @@ export default function Page() {
         }
 
         .grid-3,
-        .grid-2,
         .stack {
           display: grid;
           gap: 16px;
@@ -795,10 +802,6 @@ export default function Page() {
           color: #64748b;
           font-size: 14px;
           line-height: 1.5;
-        }
-
-        .muted {
-          color: #64748b;
         }
 
         .label {
@@ -828,6 +831,9 @@ export default function Page() {
           font-weight: 800;
           cursor: pointer;
           transition: 0.2s ease;
+          text-decoration: none;
+          display: inline-block;
+          text-align: center;
         }
 
         .btn:disabled {
@@ -1038,7 +1044,8 @@ export default function Page() {
           }
 
           .mobile-bottom-nav {
-            display: none;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
           }
 
           .hero {
@@ -1062,14 +1069,6 @@ export default function Page() {
             grid-template-columns: repeat(3, 1fr);
           }
 
-          .grid-2 {
-            grid-template-columns: 1.1fr 1fr;
-          }
-
-          .offer-card {
-            padding: 18px;
-          }
-
           .offer-main-row {
             display: grid;
             grid-template-columns: 1fr auto;
@@ -1079,72 +1078,88 @@ export default function Page() {
         }
       `}</style>
 
-      {notice && (
-        <div className={`notice ${notice.type}`}>
-          {notice.text}
-        </div>
-      )}
+      {notice && <div className={`notice ${notice.type}`}>{notice.text}</div>}
 
       <div className="container">
         <div className="desktop-nav">
           <NavButton id="home" label="Home" />
           <NavButton id="market" label="Marketplace" />
-          <NavButton id="listings" label="My Listings" />
-          <NavButton id="contacts" label="Contacts" />
-          <NavButton id="profile" label="Profile" />
+          {session && (
+            <>
+              <NavButton id="listings" label="My Listings" />
+              <NavButton id="contacts" label="Contacts" />
+              <NavButton id="profile" label="Profile" />
+            </>
+          )}
         </div>
 
         <section
-  className="hero"
-  onClick={() => setActiveTab("market")}
-  style={{ cursor: "pointer" }}
->>
+          className="hero"
+          onClick={() => setActiveTab("market")}
+          style={{ cursor: "pointer" }}
+        >
           <p className="hero-kicker">Tanzania ↔ UK Exchange Network</p>
-<h1 className="hero-title">P2P FX Marketplace</h1>
-<p className="hero-subtitle">
-  A trusted peer-to-peer platform connecting people who need to exchange
-  money between Tanzania and the UK — without bank limits, delays, or
-  unnecessary restrictions.
-</p>
-<p
-  style={{
-    margin: "10px 0 0",
-    fontSize: 14,
-    lineHeight: 1.5,
-    color: "rgba(255,255,255,0.82)",
-    maxWidth: 760,
-  }}
->
-  Built to solve real problems: sending large amounts, avoiding banking
-  issues, and finding reliable exchange partners in one secure place.
-</p>
-<p
-  style={{
-    margin: "10px 0 0",
-    fontSize: 12,
-    lineHeight: 1.5,
-    color: "rgba(255,255,255,0.68)",
-    maxWidth: 760,
-  }}
->
-  Always verify before exchanging. This platform connects users, and users
-  remain responsible for their transactions.
-</p>
+        <h1 className="hero-title">P2P FX Marketplace</h1>
+          <p className="hero-subtitle">
+            A trusted peer-to-peer platform connecting people who need to exchange
+            money between Tanzania and the UK — without bank limits, delays, or
+            unnecessary restrictions.
+          </p>
+          <p
+            style={{
+              margin: "10px 0 0",
+              fontSize: 14,
+              lineHeight: 1.5,
+              color: "rgba(255,255,255,0.82)",
+              maxWidth: 760,
+            }}
+          >
+            Built to solve real problems: sending large amounts, avoiding banking
+            issues, and finding reliable exchange partners in one secure place.
+          </p>
+          <p className="hero-small">
+            Always verify before exchanging. This platform connects users, and users
+            remain responsible for their transactions.
+          </p>
 
           <div className="stats-grid">
-            <div className="stat-box">
+            <div
+              className="stat-box"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveTab("market");
+              }}
+              style={{ cursor: "pointer" }}
+            >
               <p className="stat-label">Live Offers</p>
               <p className="stat-value">{stats.liveOffers}</p>
             </div>
-            <div className="stat-box">
+
+            <div
+              className="stat-box"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (session) setActiveTab("listings");
+              }}
+              style={{ cursor: session ? "pointer" : "default" }}
+            >
               <p className="stat-label">My Listings</p>
-              <p className="stat-value">{stats.myListings}</p>
+              <p className="stat-value">{session ? stats.myListings : "-"}</p>
             </div>
+
             <div className="stat-box">
               <p className="stat-label">Unlocked Contacts</p>
-              <p className="stat-value">{stats.contacts}</p>
+              <p className="stat-value">{session ? stats.contacts : "-"}</p>
             </div>
-            <div className="stat-box">
+
+            <div
+              className="stat-box"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (session) setActiveTab("profile");
+              }}
+              style={{ cursor: session ? "pointer" : "default" }}
+            >
               <p className="stat-label">Credits</p>
               <p className="stat-value">{session ? stats.credits : "-"}</p>
             </div>
@@ -1156,24 +1171,29 @@ export default function Page() {
               <div className="card">
                 <h2 className="card-title">How it works</h2>
                 <p className="card-subtitle">
-                  Browse live offers, unlock seller contacts with credits, and chat
-                  directly to complete your exchange.
+                  1. Browse FX offers from buyers and sellers.<br />
+                  2. Unlock contact details using credits.<br />
+                  3. Connect directly and complete your exchange securely.
                 </p>
               </div>
 
               <div className="card">
-                <h2 className="card-title">Why use it</h2>
+                <h2 className="card-title">Why this platform exists</h2>
                 <p className="card-subtitle">
-                  Public listings, trust badges, hidden contact details until unlock,
-                  and a cleaner way to discover FX rates.
+                  • Sending large amounts between Tanzania and the UK is difficult.<br />
+                  • Banks often question or restrict high-value transactions.<br />
+                  • Many users cannot keep large balances comfortably.<br />
+                  • Most exchanges happen informally via WhatsApp, without structure or trust.
                 </p>
               </div>
 
               <div className="card">
-                <h2 className="card-title">For sellers</h2>
+                <h2 className="card-title">What this platform helps with</h2>
                 <p className="card-subtitle">
-                  Post your rates, manage listings in one place, edit offers anytime,
-                  and get found by serious buyers.
+                  • Connect buyers and sellers directly.<br />
+                  • Make it easier to know who has what available.<br />
+                  • Reduce banking stress for large exchanges.<br />
+                  • Support future invoice and high-value payment services between Tanzania and the UK.
                 </p>
               </div>
             </div>
@@ -1187,18 +1207,14 @@ export default function Page() {
 
                 <div className="button-row top-space">
                   <button
-                    className={`btn ${
-                      authMode === "signup" ? "btn-primary" : "btn-dark"
-                    }`}
+                    className={`btn ${authMode === "signup" ? "btn-primary" : "btn-dark"}`}
                     onClick={() => setAuthMode("signup")}
                     type="button"
                   >
                     Sign Up
                   </button>
                   <button
-                    className={`btn ${
-                      authMode === "login" ? "btn-primary" : "btn-dark"
-                    }`}
+                    className={`btn ${authMode === "login" ? "btn-primary" : "btn-dark"}`}
                     onClick={() => setAuthMode("login")}
                     type="button"
                   >
@@ -1317,7 +1333,7 @@ export default function Page() {
               <div className="stack">
                 <input
                   className="field"
-                  placeholder="Search by name, phone, or currency"
+                  placeholder="Search by currency, amount, location, or seller..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -1356,13 +1372,19 @@ export default function Page() {
                   <option value="newest">Sort: Newest</option>
                   <option value="best_rate">Sort: Best Rate</option>
                 </select>
+
+                <div className="info-strip">
+                  Always verify rates, identity, and payment details before exchanging funds.
+                </div>
               </div>
             </div>
 
             {offersLoading ? (
               <div className="loading-state">Loading marketplace...</div>
             ) : sortedFilteredOffers.length === 0 ? (
-              <div className="empty-state">No offers found.</div>
+              <div className="empty-state">
+                No offers found. Try changing filters or search.
+              </div>
             ) : (
               <div className="stack">
                 {sortedFilteredOffers.map((offer) => {
@@ -1497,6 +1519,7 @@ export default function Page() {
             )}
           </div>
         )}
+
         {activeTab === "listings" && (
           <div className="stack">
             {session ? (
@@ -1509,9 +1532,7 @@ export default function Page() {
                         Create and manage your own marketplace offers.
                       </p>
                     </div>
-                    <span className="badge neutral">
-                      {myOffers.length} active
-                    </span>
+                    <span className="badge neutral">{myOffers.length} active</span>
                   </div>
 
                   <div className="info-strip">
@@ -1684,7 +1705,7 @@ export default function Page() {
 
                   {myOffers.length === 0 ? (
                     <div className="empty-state top-space">
-                      You have not posted any listings yet.
+                      You have not posted any listings yet. Create your first offer to start getting discovered.
                     </div>
                   ) : (
                     <div className="stack top-space">
@@ -1746,10 +1767,20 @@ export default function Page() {
               </>
             ) : (
               <div className="card">
-                <h2 className="card-title">Login Required</h2>
+                <h2 className="card-title">Start listing your exchange offers</h2>
                 <p className="card-subtitle">
-                  Log in first to create and manage your listings.
+                  Create an account or log in to post your own FX listings, manage rates,
+                  and reach buyers directly.
                 </p>
+                <div className="top-space">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => setActiveTab("home")}
+                    type="button"
+                  >
+                    Go to Login / Sign Up
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -1773,7 +1804,7 @@ export default function Page() {
 
                 {unlockedOffers.length === 0 ? (
                   <div className="empty-state">
-                    You have not unlocked any contacts yet.
+                    You have not unlocked any contacts yet. Browse the marketplace and unlock sellers to see them here.
                   </div>
                 ) : (
                   <div className="stack">
@@ -1842,10 +1873,20 @@ export default function Page() {
               </div>
             ) : (
               <div className="card">
-                <h2 className="card-title">Login Required</h2>
+                <h2 className="card-title">Keep your unlocked contacts in one place</h2>
                 <p className="card-subtitle">
-                  Log in first to view your unlocked contacts.
+                  Log in to view sellers you have already unlocked and continue your
+                  conversations from one clean dashboard.
                 </p>
+                <div className="top-space">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => setActiveTab("home")}
+                    type="button"
+                  >
+                    Go to Login / Sign Up
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -1864,7 +1905,7 @@ export default function Page() {
                   <div className="info-strip top-space">
                     Credits Balance: <strong>{Number(profile?.coins || 0)}</strong>
                     <br />
-                    Stripe purchase flow can be connected later.
+                    Your phone number is hidden from other users until they unlock your contact.
                   </div>
 
                   <div className="stack top-space">
@@ -1900,31 +1941,44 @@ export default function Page() {
                       {savingProfile ? "Saving..." : "Save Profile"}
                     </button>
 
-                    <button
-                      className="btn btn-dark"
-                      onClick={logout}
-                      type="button"
-                    >
+                    <button className="btn btn-dark" onClick={logout} type="button">
                       Logout
                     </button>
                   </div>
                 </div>
 
                 <div className="card">
+                  <h2 className="card-title">Verification Status</h2>
+                  <p className="card-subtitle">
+                    Not verified yet. Complete verification in the future to build more buyer
+                    trust and qualify for a stronger trader profile.
+                  </p>
+                </div>
+
+                <div className="card">
                   <h2 className="card-title">Trust & Safety</h2>
                   <p className="card-subtitle">
-                    Always confirm rates, identity, and transfer details before
-                    completing any exchange. Keep communication inside verified
-                    contact channels where possible.
+                    Always verify rates, identity, and payment details before exchanging money.
+                    This platform connects users, but responsibility remains with participants.
                   </p>
                 </div>
               </>
             ) : (
               <div className="card">
-                <h2 className="card-title">Login Required</h2>
+                <h2 className="card-title">Create your account profile</h2>
                 <p className="card-subtitle">
-                  Log in first to manage your profile and credits.
+                  Log in to save your name, phone number, and credits balance, and prepare
+                  your account for posting and unlocking contacts.
                 </p>
+                <div className="top-space">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => setActiveTab("home")}
+                    type="button"
+                  >
+                    Go to Login / Sign Up
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -1946,27 +2000,32 @@ export default function Page() {
         >
           Market
         </button>
-        <button
-          className={`mobile-nav-btn ${activeTab === "listings" ? "active" : ""}`}
-          onClick={() => setActiveTab("listings")}
-          type="button"
-        >
-          Listings
-        </button>
-        <button
-          className={`mobile-nav-btn ${activeTab === "contacts" ? "active" : ""}`}
-          onClick={() => setActiveTab("contacts")}
-          type="button"
-        >
-          Contacts
-        </button>
-        <button
-          className={`mobile-nav-btn ${activeTab === "profile" ? "active" : ""}`}
-          onClick={() => setActiveTab("profile")}
-          type="button"
-        >
-          Profile
-        </button>
+
+        {session && (
+          <>
+            <button
+              className={`mobile-nav-btn ${activeTab === "listings" ? "active" : ""}`}
+              onClick={() => setActiveTab("listings")}
+              type="button"
+            >
+              Listings
+            </button>
+            <button
+              className={`mobile-nav-btn ${activeTab === "contacts" ? "active" : ""}`}
+              onClick={() => setActiveTab("contacts")}
+              type="button"
+            >
+              Contacts
+            </button>
+            <button
+              className={`mobile-nav-btn ${activeTab === "profile" ? "active" : ""}`}
+              onClick={() => setActiveTab("profile")}
+              type="button"
+            >
+              Profile
+            </button>
+          </>
+        )}
       </nav>
     </main>
   );
