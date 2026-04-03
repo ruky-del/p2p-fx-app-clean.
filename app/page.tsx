@@ -251,7 +251,6 @@ export default function HomePage() {
 </div>
 
         <div className="card">
-          <h2 className="card-title">Buy Credits TEST 999</h2>
           <p className="card-subtitle">
             Choose a credit pack to unlock seller contact details quickly and continue trading.
           </p>
