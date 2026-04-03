@@ -233,24 +233,9 @@ export default function HomePage() {
             buyer trust and qualify for a stronger trader profile.
           </p>
         </div>
-<div className="card">
-  <h2 className="card-title">Buy Credits</h2>
-  <p className="card-subtitle">
-    Choose a credit pack to unlock seller contact details quickly and continue trading.
-  </p>
-
-  <div className="stack top-space">
-    <button
-      className="btn btn-primary"
-      onClick={() => startCheckout(2)}
-      disabled={checkoutLoading !== null}
-    >
-      {checkoutLoading === 2 ? "Please wait..." : "Buy 1 Credit - £2"}
-    </button>
-  </div>
-</div>
 
         <div className="card">
+          <h2 className="card-title">Buy Credits</h2>
           <p className="card-subtitle">
             Choose a credit pack to unlock seller contact details quickly and continue trading.
           </p>
