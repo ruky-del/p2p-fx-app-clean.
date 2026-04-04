@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -64,7 +65,10 @@ export default function HomePage() {
   }, []);
 
   const saveProfile = async () => {
-    if (!user) return;
+    if (!user) {
+      alert("Please log in first");
+      return;
+    }
 
     try {
       setSavingProfile(true);
@@ -128,7 +132,12 @@ export default function HomePage() {
         return;
       }
 
-      window.location.href = data.url;
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+
+      alert("Checkout link not returned");
     } catch (error) {
       console.error(error);
       alert("Something went wrong");
@@ -148,9 +157,7 @@ export default function HomePage() {
         <div className="container">
           <div className="card">
             <h2 className="card-title">Loading...</h2>
-            <p className="card-subtitle">
-              Please wait while we load your dashboard.
-            </p>
+            <p className="card-subtitle">Please wait while we load your dashboard.</p>
           </div>
         </div>
       </main>
@@ -161,10 +168,20 @@ export default function HomePage() {
     <main className="page">
       <div className="container">
         <div className="hero-card">
+          <div className="eyebrow">Tanzania ↔ UK Exchange Network</div>
           <h1>P2P FX Marketplace</h1>
           <p>
-            A trusted peer-to-peer platform connecting people who need to
-            exchange money quickly and safely.
+            A trusted peer-to-peer platform connecting people who need to exchange
+            money between Tanzania and the UK — without bank limits, delays, or
+            unnecessary restrictions.
+          </p>
+          <p>
+            Built to solve real problems: sending large amounts, avoiding banking
+            issues, and finding reliable exchange partners in one secure place.
+          </p>
+          <p className="hero-small">
+            Always verify before exchanging. This platform connects users, and users
+            remain responsible for their transactions.
           </p>
 
           <div className="stats-grid">
@@ -174,15 +191,40 @@ export default function HomePage() {
             </div>
             <div className="stat-box">
               <span className="stat-label">My Listings</span>
-              <strong>{user ? "1" : "0"}</strong>
+              <strong>{user ? "3" : "0"}</strong>
             </div>
             <div className="stat-box">
               <span className="stat-label">Unlocked Contacts</span>
-              <strong>{profile?.credits || 0}</strong>
+              <strong>{profile?.credits ? Math.min(profile.credits, 1) : 0}</strong>
             </div>
             <div className="stat-box">
               <span className="stat-label">Credits</span>
               <strong>{profile?.credits || 0}</strong>
+            </div>
+          </div>
+        </div>
+
+        {message && (
+          <div className={`card ${message.includes("successful") ? "message-success" : "message-warn"}`}>
+            <h2 className="card-title">Status</h2>
+            <p className="card-subtitle">{message}</p>
+          </div>
+        )}
+
+        <div className="card">
+          <h2 className="card-title">How it works</h2>
+          <div className="section-grid">
+            <div className="info-card">
+              <h3>1. Browse live offers</h3>
+              <p>See who is buying or selling currency and compare rates instantly.</p>
+            </div>
+            <div className="info-card">
+              <h3>2. Use credits to unlock</h3>
+              <p>Buy credits to reveal contact details and connect directly with traders.</p>
+            </div>
+            <div className="info-card">
+              <h3>3. Agree and exchange</h3>
+              <p>Discuss the transaction directly and complete the exchange safely.</p>
             </div>
           </div>
         </div>
@@ -196,65 +238,10 @@ export default function HomePage() {
           </div>
         )}
 
-        {message && (
-          <div className="card">
-            <h2 className="card-title">Status</h2>
-            <p className="card-subtitle">{message}</p>
-          </div>
-        )}
-
-        {user && (
-          <div className="card">
-            <h2 className="card-title">Profile</h2>
-            <p className="card-subtitle">
-              Update your details to build a stronger trader profile.
-            </p>
-
-            <div className="form-stack">
-              <input
-                className="input"
-                placeholder="Full name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-              />
-
-              <input
-                className="input"
-                placeholder="Local number? Just type 07... and the app will convert it."
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-
-              <button
-                className="btn btn-primary"
-                onClick={saveProfile}
-                disabled={savingProfile}
-              >
-                {savingProfile ? "Saving..." : "Save Profile"}
-              </button>
-
-              <button className="btn btn-dark" onClick={logout}>
-                Logout
-              </button>
-            </div>
-          </div>
-        )}
-
-        {user && (
-          <div className="card">
-            <h2 className="card-title">Verification Status</h2>
-            <p className="card-subtitle">
-              Not verified yet. Complete verification in the future to build more
-              buyer trust and qualify for a stronger trader profile.
-            </p>
-          </div>
-        )}
-
         <div className="card">
           <h2 className="card-title">Buy Credits</h2>
           <p className="card-subtitle">
-            Choose a credit pack to unlock seller contact details quickly and
-            continue trading.
+            Choose a credit pack to unlock seller contact details quickly and continue trading.
           </p>
 
           <div className="stack top-space">
@@ -284,13 +271,75 @@ export default function HomePage() {
           </div>
         </div>
 
+        {user && (
+          <>
+            <div className="card">
+              <h2 className="card-title">Profile</h2>
+              <p className="card-subtitle">
+                Manage your identity, phone number and available credits.
+              </p>
+
+              <div className="form-stack top-space">
+                <label className="input-label">
+                  Name
+                  <input
+                    className="input"
+                    placeholder="Full name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                  />
+                </label>
+
+                <label className="input-label">
+                  Phone
+                  <input
+                    className="input"
+                    placeholder="Local number? Just type 07... and the app will convert it."
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                </label>
+
+                <div className="helper-text">Credits Balance: {profile?.credits || 0}</div>
+
+                <button
+                  className="btn btn-primary"
+                  onClick={saveProfile}
+                  disabled={savingProfile}
+                >
+                  {savingProfile ? "Saving..." : "Save Profile"}
+                </button>
+
+                <button className="btn btn-dark" onClick={logout}>
+                  Logout
+                </button>
+              </div>
+            </div>
+
+            <div className="card">
+              <h2 className="card-title">Verification Status</h2>
+              <p className="card-subtitle">
+                Not verified yet. Complete verification in the future to build more buyer trust
+                and qualify for a stronger trader profile.
+              </p>
+            </div>
+          </>
+        )}
+
         <div className="card">
           <h2 className="card-title">Trust & Safety</h2>
           <p className="card-subtitle">
-            Always verify rates, identity, and payment details before exchanging
-            money. This platform connects users, but responsibility remains with
-            participants.
+            Always verify rates, identity, and payment details before exchanging money.
+            This platform connects users, but responsibility remains with participants.
           </p>
+        </div>
+
+        <div className="nav">
+          <Link href="/" className="active">
+            Home
+          </Link>
+          <Link href="/market">Market</Link>
+          <Link href="/profile">Profile</Link>
         </div>
       </div>
     </main>

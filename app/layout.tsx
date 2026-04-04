@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "P2P FX Marketplace",
     description: "Trade currency peer-to-peer easily.",
-    url: "https://p2p-fx-app-clean-2gbg.vercel.app",
+    url: "https://p2p-fx-app-clean-vgkm.vercel.app",
     siteName: "P2P FX",
     images: [
       {
@@ -25,9 +25,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <html lang="en">
       <body>{children}</body>
