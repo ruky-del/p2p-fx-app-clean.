@@ -148,29 +148,8 @@ export default function HomePage() {
         <div className="container">
           <div className="card">
             <h2 className="card-title">Loading...</h2>
-            <p className="card-subtitle">Please wait while we load your dashboard.</p>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  if (!user) {
-    return (
-      <main className="page">
-        <div className="container">
-          <div className="hero-card">
-            <h1>P2P FX Marketplace</h1>
-            <p>
-              A trusted peer-to-peer platform connecting people who need to
-              exchange money quickly and safely.
-            </p>
-          </div>
-
-          <div className="card">
-            <h2 className="card-title">Please log in</h2>
             <p className="card-subtitle">
-              You need to log in to manage your profile and buy credits.
+              Please wait while we load your dashboard.
             </p>
           </div>
         </div>
@@ -195,7 +174,7 @@ export default function HomePage() {
             </div>
             <div className="stat-box">
               <span className="stat-label">My Listings</span>
-              <strong>1</strong>
+              <strong>{user ? "1" : "0"}</strong>
             </div>
             <div className="stat-box">
               <span className="stat-label">Unlocked Contacts</span>
@@ -208,6 +187,15 @@ export default function HomePage() {
           </div>
         </div>
 
+        {!user && (
+          <div className="card">
+            <h2 className="card-title">Please log in</h2>
+            <p className="card-subtitle">
+              You need to log in to manage your profile and complete payment.
+            </p>
+          </div>
+        )}
+
         {message && (
           <div className="card">
             <h2 className="card-title">Status</h2>
@@ -215,53 +203,58 @@ export default function HomePage() {
           </div>
         )}
 
-        <div className="card">
-          <h2 className="card-title">Profile</h2>
-          <p className="card-subtitle">
-            Update your details to build a stronger trader profile.
-          </p>
+        {user && (
+          <div className="card">
+            <h2 className="card-title">Profile</h2>
+            <p className="card-subtitle">
+              Update your details to build a stronger trader profile.
+            </p>
 
-          <div className="form-stack">
-            <input
-              className="input"
-              placeholder="Full name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-            />
+            <div className="form-stack">
+              <input
+                className="input"
+                placeholder="Full name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
 
-            <input
-              className="input"
-              placeholder="Local number? Just type 07... and the app will convert it."
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
+              <input
+                className="input"
+                placeholder="Local number? Just type 07... and the app will convert it."
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
 
-            <button
-              className="btn btn-primary"
-              onClick={saveProfile}
-              disabled={savingProfile}
-            >
-              {savingProfile ? "Saving..." : "Save Profile"}
-            </button>
+              <button
+                className="btn btn-primary"
+                onClick={saveProfile}
+                disabled={savingProfile}
+              >
+                {savingProfile ? "Saving..." : "Save Profile"}
+              </button>
 
-            <button className="btn btn-dark" onClick={logout}>
-              Logout
-            </button>
+              <button className="btn btn-dark" onClick={logout}>
+                Logout
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="card">
-          <h2 className="card-title">Verification Status</h2>
-          <p className="card-subtitle">
-            Not verified yet. Complete verification in the future to build more
-            buyer trust and qualify for a stronger trader profile.
-          </p>
-        </div>
+        {user && (
+          <div className="card">
+            <h2 className="card-title">Verification Status</h2>
+            <p className="card-subtitle">
+              Not verified yet. Complete verification in the future to build more
+              buyer trust and qualify for a stronger trader profile.
+            </p>
+          </div>
+        )}
 
         <div className="card">
           <h2 className="card-title">Buy Credits</h2>
           <p className="card-subtitle">
-            Choose a credit pack to unlock seller contact details quickly and continue trading.
+            Choose a credit pack to unlock seller contact details quickly and
+            continue trading.
           </p>
 
           <div className="stack top-space">
@@ -294,12 +287,12 @@ export default function HomePage() {
         <div className="card">
           <h2 className="card-title">Trust & Safety</h2>
           <p className="card-subtitle">
-            Always verify rates, identity, and payment details before exchanging money.
-            This platform connects users, but responsibility remains with participants.
+            Always verify rates, identity, and payment details before exchanging
+            money. This platform connects users, but responsibility remains with
+            participants.
           </p>
         </div>
       </div>
     </main>
   );
-}
 }
