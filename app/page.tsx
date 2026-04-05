@@ -20,9 +20,12 @@ export default function HomePage() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState<number | null>(null);
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState<"success" | "warn" | "info">("info");
   const [loadingUser, setLoadingUser] = useState(true);
 
   const [authEmail, setAuthEmail] = useState("");
+  const [authCode, setAuthCode] = useState("");
+  const [authStep, setAuthStep] = useState<"email" | "code">("email");
   const [authLoading, setAuthLoading] = useState(false);
 
   useEffect(() => {
@@ -52,10 +55,12 @@ export default function HomePage() {
 
         if (params.get("success") === "true") {
           setMessage("Payment successful. Your credits have been added.");
+          setMessageType("success");
         }
 
         if (params.get("canceled") === "true") {
-          setMessage("Payment cancelled. No problem — you can try again anytime.");
+          setMessage("Payment cancelled. You can try again any time.");
+          setMessageType("warn");
         }
       } catch (error) {
         console.error(error);
@@ -84,6 +89,9 @@ export default function HomePage() {
           setFullName(data.full_name || "");
           setPhone(data.phone || "");
         }
+
+        setMessage("You are now logged in successfully.");
+        setMessageType("success");
       } else {
         setProfile(null);
         setFullName("");
@@ -98,7 +106,8 @@ export default function HomePage() {
 
   const saveProfile = async () => {
     if (!user) {
-      alert("Please log in first.");
+      setMessage("Please log in first.");
+      setMessageType("warn");
       return;
     }
 
@@ -115,7 +124,8 @@ export default function HomePage() {
       const { error } = await supabase.from("profiles").upsert(payload);
 
       if (error) {
-        alert(error.message);
+        setMessage(error.message);
+        setMessageType("warn");
         return;
       }
 
@@ -127,10 +137,12 @@ export default function HomePage() {
         email: user.email,
       }));
 
-      alert("Profile saved successfully.");
+      setMessage("Profile saved successfully.");
+      setMessageType("success");
     } catch (error) {
       console.error(error);
-      alert("Failed to save profile.");
+      setMessage("Failed to save profile.");
+      setMessageType("warn");
     } finally {
       setSavingProfile(false);
     }
@@ -138,7 +150,8 @@ export default function HomePage() {
 
   const startCheckout = async (amount: number) => {
     if (!user) {
-      alert("Please log in to purchase credits and unlock trader contacts.");
+      setMessage("Please log in to purchase credits and unlock trader contacts.");
+      setMessageType("warn");
       return;
     }
 
@@ -160,7 +173,8 @@ export default function HomePage() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.error || "Checkout failed");
+        setMessage(data.error || "Checkout failed.");
+        setMessageType("warn");
         return;
       }
 
@@ -169,18 +183,21 @@ export default function HomePage() {
         return;
       }
 
-      alert("Checkout link not returned.");
+      setMessage("Checkout link not returned.");
+      setMessageType("warn");
     } catch (error) {
       console.error(error);
-      alert("Something went wrong.");
+      setMessage("Something went wrong while starting checkout.");
+      setMessageType("warn");
     } finally {
       setCheckoutLoading(null);
     }
   };
 
-  const handleMagicLinkLogin = async () => {
+  const handleSendCode = async () => {
     if (!authEmail.trim()) {
-      alert("Please enter your email address.");
+      setMessage("Please enter your email address.");
+      setMessageType("warn");
       return;
     }
 
@@ -189,20 +206,55 @@ export default function HomePage() {
 
       const { error } = await supabase.auth.signInWithOtp({
         email: authEmail.trim(),
-        options: {
-          emailRedirectTo: window.location.origin,
-        },
       });
 
       if (error) {
-        alert(error.message);
+        setMessage(error.message);
+        setMessageType("warn");
         return;
       }
 
-      alert("Check your email for your secure login link.");
+      setAuthStep("code");
+      setMessage("We sent a secure login code to your email. Enter it below to continue.");
+      setMessageType("info");
     } catch (error) {
       console.error(error);
-      alert("Could not send login link.");
+      setMessage("Could not send login code.");
+      setMessageType("warn");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!authEmail.trim() || !authCode.trim()) {
+      setMessage("Please enter both your email and the login code.");
+      setMessageType("warn");
+      return;
+    }
+
+    try {
+      setAuthLoading(true);
+
+      const { error } = await supabase.auth.verifyOtp({
+        email: authEmail.trim(),
+        token: authCode.trim(),
+        type: "email",
+      });
+
+      if (error) {
+        setMessage("Invalid or expired code. Please try again.");
+        setMessageType("warn");
+        return;
+      }
+
+      setMessage("Login successful.");
+      setMessageType("success");
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+      setMessage("Could not verify your code.");
+      setMessageType("warn");
     } finally {
       setAuthLoading(false);
     }
@@ -219,9 +271,7 @@ export default function HomePage() {
         <div className="container">
           <div className="card">
             <h2 className="card-title">Loading...</h2>
-            <p className="card-subtitle">
-              Please wait while we load your dashboard.
-            </p>
+            <p className="card-subtitle">Please wait while we load your dashboard.</p>
           </div>
         </div>
       </main>
@@ -274,10 +324,16 @@ export default function HomePage() {
         {message && (
           <div
             className={`card ${
-              message.includes("successful") ? "message-success" : "message-warn"
+              messageType === "success"
+                ? "message-success"
+                : messageType === "warn"
+                ? "message-warn"
+                : ""
             }`}
           >
-            <h2 className="card-title">Status</h2>
+            <h2 className="card-title">
+              {messageType === "success" ? "Success" : messageType === "warn" ? "Notice" : "Update"}
+            </h2>
             <p className="card-subtitle">{message}</p>
           </div>
         )}
@@ -287,24 +343,17 @@ export default function HomePage() {
           <div className="section-grid">
             <div className="info-card">
               <h3>1. Browse live offers</h3>
-              <p>
-                See who is buying or selling currency and compare rates instantly.
-              </p>
+              <p>See who is buying or selling currency and compare rates instantly.</p>
             </div>
 
             <div className="info-card">
               <h3>2. Use credits to unlock</h3>
-              <p>
-                Buy credits to reveal contact details and connect directly with
-                traders.
-              </p>
+              <p>Buy credits to reveal contact details and connect directly with traders.</p>
             </div>
 
             <div className="info-card">
               <h3>3. Agree and exchange</h3>
-              <p>
-                Discuss the transaction directly and complete the exchange safely.
-              </p>
+              <p>Discuss the transaction directly and complete the exchange safely.</p>
             </div>
           </div>
         </div>
@@ -329,16 +378,56 @@ export default function HomePage() {
                 />
               </label>
 
-              <button
-                className="btn btn-primary"
-                onClick={handleMagicLinkLogin}
-                disabled={authLoading}
-              >
-                {authLoading ? "Sending login link..." : "Login / Create Account"}
-              </button>
+              {authStep === "code" && (
+                <label className="input-label">
+                  Login code
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="Enter the code from your email"
+                    value={authCode}
+                    onChange={(e) => setAuthCode(e.target.value)}
+                  />
+                </label>
+              )}
+
+              {authStep === "email" ? (
+                <button
+                  className="btn btn-primary"
+                  onClick={handleSendCode}
+                  disabled={authLoading}
+                >
+                  {authLoading ? "Sending code..." : "Send Login Code"}
+                </button>
+              ) : (
+                <>
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleVerifyCode}
+                    disabled={authLoading}
+                  >
+                    {authLoading ? "Verifying..." : "Verify Code & Login"}
+                  </button>
+
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => {
+                      setAuthStep("email");
+                      setAuthCode("");
+                      setMessage("You can enter a different email address below.");
+                      setMessageType("info");
+                    }}
+                    disabled={authLoading}
+                  >
+                    Change Email
+                  </button>
+                </>
+              )}
 
               <div className="helper-text">
-                We will send a secure login link to your email.
+                {authStep === "email"
+                  ? "We will send a secure login code to your email."
+                  : "Check your email, copy the code, and enter it above."}
               </div>
             </div>
           </div>
