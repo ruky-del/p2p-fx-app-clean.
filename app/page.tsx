@@ -22,6 +22,9 @@ export default function HomePage() {
   const [message, setMessage] = useState("");
   const [loadingUser, setLoadingUser] = useState(true);
 
+  const [authEmail, setAuthEmail] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -48,7 +51,7 @@ export default function HomePage() {
         const params = new URLSearchParams(window.location.search);
 
         if (params.get("success") === "true") {
-          setMessage("Payment successful ✅ Your credits have been added.");
+          setMessage("Payment successful. Your credits have been added.");
         }
 
         if (params.get("canceled") === "true") {
@@ -62,11 +65,40 @@ export default function HomePage() {
     };
 
     loadUser();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", currentUser.id)
+          .single();
+
+        if (data) {
+          setProfile(data);
+          setFullName(data.full_name || "");
+          setPhone(data.phone || "");
+        }
+      } else {
+        setProfile(null);
+        setFullName("");
+        setPhone("");
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const saveProfile = async () => {
     if (!user) {
-      alert("Please log in first");
+      alert("Please log in first.");
       return;
     }
 
@@ -95,10 +127,10 @@ export default function HomePage() {
         email: user.email,
       }));
 
-      alert("Profile saved");
+      alert("Profile saved successfully.");
     } catch (error) {
       console.error(error);
-      alert("Failed to save profile");
+      alert("Failed to save profile.");
     } finally {
       setSavingProfile(false);
     }
@@ -106,7 +138,7 @@ export default function HomePage() {
 
   const startCheckout = async (amount: number) => {
     if (!user) {
-      alert("Please log in first");
+      alert("Please log in to purchase credits and unlock trader contacts.");
       return;
     }
 
@@ -137,12 +169,42 @@ export default function HomePage() {
         return;
       }
 
-      alert("Checkout link not returned");
+      alert("Checkout link not returned.");
     } catch (error) {
       console.error(error);
-      alert("Something went wrong");
+      alert("Something went wrong.");
     } finally {
       setCheckoutLoading(null);
+    }
+  };
+
+  const handleMagicLinkLogin = async () => {
+    if (!authEmail.trim()) {
+      alert("Please enter your email address.");
+      return;
+    }
+
+    try {
+      setAuthLoading(true);
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email: authEmail.trim(),
+        options: {
+          emailRedirectTo: window.location.origin,
+        },
+      });
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      alert("Check your email for your secure login link.");
+    } catch (error) {
+      console.error(error);
+      alert("Could not send login link.");
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -157,7 +219,9 @@ export default function HomePage() {
         <div className="container">
           <div className="card">
             <h2 className="card-title">Loading...</h2>
-            <p className="card-subtitle">Please wait while we load your dashboard.</p>
+            <p className="card-subtitle">
+              Please wait while we load your dashboard.
+            </p>
           </div>
         </div>
       </main>
@@ -185,27 +249,34 @@ export default function HomePage() {
           </p>
 
           <div className="stats-grid">
-            <div className="stat-box">
+            <Link href="/market" className="stat-box">
               <span className="stat-label">Live Offers</span>
               <strong>4</strong>
-            </div>
-            <div className="stat-box">
+            </Link>
+
+            <Link href="/market" className="stat-box">
               <span className="stat-label">My Listings</span>
               <strong>{user ? "3" : "0"}</strong>
-            </div>
-            <div className="stat-box">
+            </Link>
+
+            <Link href="/profile" className="stat-box">
               <span className="stat-label">Unlocked Contacts</span>
               <strong>{profile?.credits ? Math.min(profile.credits, 1) : 0}</strong>
-            </div>
-            <div className="stat-box">
+            </Link>
+
+            <Link href="/profile" className="stat-box">
               <span className="stat-label">Credits</span>
               <strong>{profile?.credits || 0}</strong>
-            </div>
+            </Link>
           </div>
         </div>
 
         {message && (
-          <div className={`card ${message.includes("successful") ? "message-success" : "message-warn"}`}>
+          <div
+            className={`card ${
+              message.includes("successful") ? "message-success" : "message-warn"
+            }`}
+          >
             <h2 className="card-title">Status</h2>
             <p className="card-subtitle">{message}</p>
           </div>
@@ -216,32 +287,69 @@ export default function HomePage() {
           <div className="section-grid">
             <div className="info-card">
               <h3>1. Browse live offers</h3>
-              <p>See who is buying or selling currency and compare rates instantly.</p>
+              <p>
+                See who is buying or selling currency and compare rates instantly.
+              </p>
             </div>
+
             <div className="info-card">
               <h3>2. Use credits to unlock</h3>
-              <p>Buy credits to reveal contact details and connect directly with traders.</p>
+              <p>
+                Buy credits to reveal contact details and connect directly with
+                traders.
+              </p>
             </div>
+
             <div className="info-card">
               <h3>3. Agree and exchange</h3>
-              <p>Discuss the transaction directly and complete the exchange safely.</p>
+              <p>
+                Discuss the transaction directly and complete the exchange safely.
+              </p>
             </div>
           </div>
         </div>
 
         {!user && (
           <div className="card">
-            <h2 className="card-title">Please log in</h2>
+            <h2 className="card-title">Welcome to P2P FX</h2>
             <p className="card-subtitle">
-              You need to log in to manage your profile and complete payment.
+              Log in or create your account to manage your profile, unlock trader
+              contacts, and complete secure transactions.
             </p>
+
+            <div className="form-stack top-space">
+              <label className="input-label">
+                Email address
+                <input
+                  className="input"
+                  type="email"
+                  placeholder="Enter your email address"
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                />
+              </label>
+
+              <button
+                className="btn btn-primary"
+                onClick={handleMagicLinkLogin}
+                disabled={authLoading}
+              >
+                {authLoading ? "Sending login link..." : "Login / Create Account"}
+              </button>
+
+              <div className="helper-text">
+                We will send a secure login link to your email.
+              </div>
+            </div>
           </div>
         )}
 
         <div className="card">
-          <h2 className="card-title">Buy Credits</h2>
+          <h2 className="card-title">Unlock Seller Contacts</h2>
           <p className="card-subtitle">
-            Choose a credit pack to unlock seller contact details quickly and continue trading.
+            Access verified trader contact details instantly. Choose a credit pack
+            below to start connecting with exchange partners and complete
+            transactions securely.
           </p>
 
           <div className="stack top-space">
@@ -300,7 +408,9 @@ export default function HomePage() {
                   />
                 </label>
 
-                <div className="helper-text">Credits Balance: {profile?.credits || 0}</div>
+                <div className="helper-text">
+                  Credits Balance: {profile?.credits || 0}
+                </div>
 
                 <button
                   className="btn btn-primary"
@@ -319,8 +429,8 @@ export default function HomePage() {
             <div className="card">
               <h2 className="card-title">Verification Status</h2>
               <p className="card-subtitle">
-                Not verified yet. Complete verification in the future to build more buyer trust
-                and qualify for a stronger trader profile.
+                Not verified yet. Complete verification in the future to build more
+                buyer trust and qualify for a stronger trader profile.
               </p>
             </div>
           </>
@@ -329,8 +439,9 @@ export default function HomePage() {
         <div className="card">
           <h2 className="card-title">Trust & Safety</h2>
           <p className="card-subtitle">
-            Always verify rates, identity, and payment details before exchanging money.
-            This platform connects users, but responsibility remains with participants.
+            Always verify rates, identity, and payment details before exchanging
+            money. This platform connects users, but responsibility remains with
+            participants.
           </p>
         </div>
 
