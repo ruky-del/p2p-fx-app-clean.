@@ -1,69 +1,293 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo, useState } from "react";
 
-const offers = [
+const offersData = [
   {
     id: 1,
-    title: "Sell GBP for TZS",
-    description: "Reliable seller in London. Fast response and same-day transfer.",
-    rate: "1 GBP = 3,150 TZS",
-    amount: "£2,000 available",
+    trader: "Alice Trader",
+    rating: "94.45%",
+    trades: 81,
+    side: "buy",
+    fiat: "GBP",
+    asset: "USDT",
+    price: 3150,
+    min: 500,
+    max: 2000,
+    available: 1500,
+    area: "London",
+    payment: ["Bank Transfer", "Monzo"],
+    time: "15 min",
+    verified: true,
   },
   {
     id: 2,
-    title: "Buy GBP with TZS",
-    description: "Buyer based in Dar es Salaam looking for quick exchange.",
-    rate: "1 GBP = 3,120 TZS",
-    amount: "Need £1,500",
+    trader: "Dar Exchange",
+    rating: "98.20%",
+    trades: 214,
+    side: "buy",
+    fiat: "GBP",
+    asset: "USDT",
+    price: 3120,
+    min: 200,
+    max: 1000,
+    available: 980,
+    area: "Dar es Salaam",
+    payment: ["Tigo Pesa", "Bank"],
+    time: "10 min",
+    verified: true,
   },
   {
     id: 3,
-    title: "Sell TZS for GBP",
-    description: "Trusted trader with repeat transactions and flexible timing.",
-    rate: "1 GBP = 3,140 TZS",
-    amount: "TZS 8,000,000 available",
+    trader: "UK Seller",
+    rating: "99.10%",
+    trades: 402,
+    side: "buy",
+    fiat: "GBP",
+    asset: "USDT",
+    price: 3140,
+    min: 100,
+    max: 5000,
+    available: 900,
+    area: "Birmingham",
+    payment: ["Bank Transfer"],
+    time: "20 min",
+    verified: false,
+  },
+  {
+    id: 4,
+    trader: "Sambala FX",
+    rating: "97.80%",
+    trades: 350,
+    side: "sell",
+    fiat: "TZS",
+    asset: "USDT",
+    price: 2618,
+    min: 10000,
+    max: 500000,
+    available: 397.9,
+    area: "Dar es Salaam",
+    payment: ["M-Pesa", "Airtel Money"],
+    time: "15 min",
+    verified: true,
+  },
+  {
+    id: 5,
+    trader: "Mboni One",
+    rating: "99.49%",
+    trades: 1902,
+    side: "sell",
+    fiat: "TZS",
+    asset: "USDT",
+    price: 2553.99,
+    min: 10000,
+    max: 15152235,
+    available: 5932.77,
+    area: "Mwanza",
+    payment: ["NMB", "CRDB", "Tigo Money"],
+    time: "15 min",
+    verified: true,
   },
 ];
 
 export default function MarketPage() {
+  const [side, setSide] = useState<"buy" | "sell">("buy");
+  const [currency, setCurrency] = useState("GBP");
+  const [amount, setAmount] = useState("1000");
+  const [area, setArea] = useState("All");
+  const [sortBy, setSortBy] = useState<"closest" | "best_price" | "newest">("closest");
+
+  const numericAmount = Number(amount) || 0;
+
+  const filteredOffers = useMemo(() => {
+    let base = offersData.filter((offer) => {
+      const sideMatch = offer.side === side;
+      const currencyMatch = offer.fiat === currency;
+      const areaMatch = area === "All" || offer.area === area;
+      return sideMatch && currencyMatch && areaMatch;
+    });
+
+    const ranked = [...base].sort((a, b) => {
+      if (sortBy === "closest") {
+        const diffA = Math.abs(a.available - numericAmount);
+        const diffB = Math.abs(b.available - numericAmount);
+        if (diffA !== diffB) return diffA - diffB;
+
+        return side === "buy" ? a.price - b.price : b.price - a.price;
+      }
+
+      if (sortBy === "best_price") {
+        return side === "buy" ? a.price - b.price : b.price - a.price;
+      }
+
+      return b.trades - a.trades;
+    });
+
+    return ranked;
+  }, [side, currency, amount, area, sortBy, numericAmount]);
+
+  const bestOfferId = filteredOffers[0]?.id;
+
   return (
     <main className="page">
       <div className="container">
-        <div className="hero-card">
-          <div className="eyebrow">Live exchange board</div>
-          <h1>Marketplace</h1>
-          <p>Browse sample live offers and compare rates before unlocking contact details.</p>
-        </div>
-
         <div className="card">
-          <h2 className="card-title">Available offers</h2>
+          <h2 className="card-title">Marketplace</h2>
           <p className="card-subtitle">
-            These are example offers to keep the marketplace structure complete.
+            Find the best exchange partner based on currency, amount, area and price.
           </p>
 
-          <div className="offer-list top-space">
-            {offers.map((offer) => (
-              <div key={offer.id} className="offer-item">
-                <div className="offer-main">
-                  <h3>{offer.title}</h3>
-                  <p>{offer.description}</p>
-                </div>
+          <div className="form-stack top-space">
+            <div className="stack" style={{ gridTemplateColumns: "1fr 1fr" }}>
+              <button
+                className={`btn ${side === "buy" ? "btn-success" : "btn-outline"}`}
+                onClick={() => setSide("buy")}
+              >
+                Buy
+              </button>
 
-                <div className="offer-side">
-                  <div className="offer-rate">{offer.rate}</div>
-                  <div className="offer-meta">{offer.amount}</div>
-                </div>
-              </div>
-            ))}
+              <button
+                className={`btn ${side === "sell" ? "btn-dark" : "btn-outline"}`}
+                onClick={() => setSide("sell")}
+              >
+                Sell
+              </button>
+            </div>
+
+            <label className="input-label">
+              Currency
+              <select
+                className="input"
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+              >
+                <option value="GBP">GBP</option>
+                <option value="TZS">TZS</option>
+              </select>
+            </label>
+
+            <label className="input-label">
+              Amount
+              <input
+                className="input"
+                type="number"
+                placeholder="Enter target amount"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </label>
+
+            <label className="input-label">
+              Area
+              <select
+                className="input"
+                value={area}
+                onChange={(e) => setArea(e.target.value)}
+              >
+                <option value="All">All areas</option>
+                <option value="London">London</option>
+                <option value="Dar es Salaam">Dar es Salaam</option>
+                <option value="Birmingham">Birmingham</option>
+                <option value="Mwanza">Mwanza</option>
+              </select>
+            </label>
+
+            <label className="input-label">
+              Sort by
+              <select
+                className="input"
+                value={sortBy}
+                onChange={(e) =>
+                  setSortBy(e.target.value as "closest" | "best_price" | "newest")
+                }
+              >
+                <option value="closest">Closest amount match</option>
+                <option value="best_price">Best price</option>
+                <option value="newest">Most active traders</option>
+              </select>
+            </label>
           </div>
         </div>
 
         <div className="card">
-          <h2 className="card-title">Need more access?</h2>
+          <h2 className="card-title">Available Offers</h2>
           <p className="card-subtitle">
-            Return to the home page and use Buy Credits to unlock contact details.
+            Browse all matching offers or use sorting to find the best exchange match first.
           </p>
+
+          <div className="offer-list top-space">
+            {filteredOffers.length === 0 ? (
+              <p className="empty-state">
+                No offers match your current filters. Try changing the currency, area, or amount.
+              </p>
+            ) : (
+              filteredOffers.map((offer) => {
+                const isBestMatch = offer.id === bestOfferId;
+                const buttonLabel = side === "buy" ? "Buy" : "Sell";
+
+                return (
+                  <div key={offer.id} className="offer-item">
+                    <div className="offer-main">
+                      <h3>
+                        {offer.trader}{" "}
+                        {offer.verified ? (
+                          <span style={{ fontSize: "0.85rem", color: "#2563eb" }}>
+                            • Verified
+                          </span>
+                        ) : null}
+                      </h3>
+
+                      <p>
+                        Trades: {offer.trades} • Rating: {offer.rating} • Area: {offer.area}
+                      </p>
+
+                      <p style={{ marginTop: "8px" }}>
+                        Limit: {offer.min.toLocaleString()} - {offer.max.toLocaleString()} {offer.fiat}
+                      </p>
+
+                      <p>
+                        Available: {offer.available.toLocaleString()} {offer.fiat}
+                      </p>
+
+                      <p>Payment: {offer.payment.join(", ")}</p>
+
+                      {isBestMatch ? (
+                        <div
+                          style={{
+                            marginTop: "10px",
+                            display: "inline-block",
+                            padding: "6px 10px",
+                            borderRadius: "999px",
+                            background: "#fef3c7",
+                            color: "#92400e",
+                            fontSize: "0.8rem",
+                            fontWeight: 700,
+                          }}
+                        >
+                          Best Match
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="offer-side">
+                      <div className="offer-rate">
+                        1 {offer.asset} = {offer.price.toLocaleString()} {offer.fiat}
+                      </div>
+                      <div className="offer-meta">{offer.time}</div>
+
+                      <button
+                        className={`btn ${side === "buy" ? "btn-success" : "btn-dark"}`}
+                        style={{ marginTop: "14px" }}
+                      >
+                        {buttonLabel}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
 
         <div className="nav">
