@@ -322,18 +322,28 @@ export default function HomePage() {
   };
 
   if (loadingUser) {
-    return (
-      <main className="page">
-        <div className="container">
-          <div className="card">
-            <h2 className="card-title">Loading...</h2>
-            <p className="card-subtitle">Please wait while we load your dashboard.</p>
+  return (
+    <main className="page">
+      <div className="container">
+        <div className="card">
+          <h2 className="card-title">Welcome to P2P FX</h2>
+          <p className="card-subtitle">
+            We are preparing your dashboard. If this takes too long, refresh the page.
+          </p>
+
+          <div className="top-space">
+            <button
+              className="btn btn-outline"
+              onClick={() => window.location.reload()}
+            >
+              Refresh Page
+            </button>
           </div>
         </div>
-      </main>
-    );
-  }
-
+      </div>
+    </main>
+  );
+}
   return (
     <main className="page">
       <div className="container">
