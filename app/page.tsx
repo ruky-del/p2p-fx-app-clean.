@@ -6,19 +6,22 @@ import { supabase } from "@/lib/supabase";
 
 type UserProfile = {
   id: string;
-  full_name: string;
-  phone: string;
-  credits: number;
-  email?: string;
+  full_name: string | null;
+  phone: string | null;
+  credits: number | null;
+  email?: string | null;
 };
 
 export default function HomePage() {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+
   const [savingProfile, setSavingProfile] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState<number | null>(null);
+
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "warn" | "info">("info");
   const [loadingUser, setLoadingUser] = useState(true);
@@ -29,48 +32,76 @@ export default function HomePage() {
   const [authLoading, setAuthLoading] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+  const applyProfile = (data: UserProfile | null) => {
+    setProfile(data);
+    setFullName(data?.full_name || "");
+    setPhone(data?.phone || "");
+  };
 
-        setUser(user);
+  const loadProfile = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .maybeSingle();
 
-        if (user) {
-          const { data } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", user.id)
-            .single();
+    if (error) {
+      console.error("Profile load error:", error.message);
+      return null;
+    }
 
-          if (data) {
-            setProfile(data);
-            setFullName(data.full_name || "");
-            setPhone(data.phone || "");
-          }
-        }
+    return data as UserProfile | null;
+  };
 
-        const params = new URLSearchParams(window.location.search);
+  const syncCurrentUser = async () => {
+    try {
+      setLoadingUser(true);
 
-        if (params.get("success") === "true") {
-          setMessage("Payment successful. Your credits have been added to your account.");
-          setMessageType("success");
-        }
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
 
-        if (params.get("canceled") === "true") {
-          setMessage("Payment was cancelled. You can try again any time.");
-          setMessageType("warn");
-        }
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoadingUser(false);
+      if (error) {
+        console.error("Session error:", error.message);
+        setUser(null);
+        applyProfile(null);
+        return;
       }
-    };
 
-    loadUser();
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      if (!currentUser) {
+        applyProfile(null);
+        return;
+      }
+
+      const profileData = await loadProfile(currentUser.id);
+      applyProfile(profileData);
+    } catch (error) {
+      console.error("syncCurrentUser error:", error);
+      setUser(null);
+      applyProfile(null);
+    } finally {
+      setLoadingUser(false);
+    }
+  };
+
+  useEffect(() => {
+    syncCurrentUser();
+
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get("success") === "true") {
+      setMessage("Payment successful. Your credits have been added to your account.");
+      setMessageType("success");
+    }
+
+    if (params.get("canceled") === "true") {
+      setMessage("Payment was cancelled. You can try again any time.");
+      setMessageType("warn");
+    }
 
     const {
       data: { subscription },
@@ -78,26 +109,13 @@ export default function HomePage() {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
 
-      if (currentUser) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", currentUser.id)
-          .single();
-
-        if (data) {
-          setProfile(data);
-          setFullName(data.full_name || "");
-          setPhone(data.phone || "");
-        }
-
-        setMessage("You are now logged in successfully.");
-        setMessageType("success");
-      } else {
-        setProfile(null);
-        setFullName("");
-        setPhone("");
+      if (!currentUser) {
+        applyProfile(null);
+        return;
       }
+
+      const profileData = await loadProfile(currentUser.id);
+      applyProfile(profileData);
     });
 
     return () => {
@@ -146,13 +164,15 @@ export default function HomePage() {
         return;
       }
 
-      setProfile((prev) => ({
+      const updatedProfile = {
         id: user.id,
         full_name: fullName,
         phone,
-        credits: prev?.credits || 0,
+        credits: profile?.credits || 0,
         email: user.email,
-      }));
+      };
+
+      applyProfile(updatedProfile);
 
       setMessage("Profile saved successfully.");
       setMessageType("success");
@@ -276,9 +296,14 @@ export default function HomePage() {
         return;
       }
 
+      await syncCurrentUser();
+
+      setAuthStep("email");
+      setAuthCode("");
+      setAuthEmail("");
+
       setMessage("Login successful.");
       setMessageType("success");
-      window.location.reload();
     } catch (error) {
       console.error(error);
       setMessage("We could not verify your code. Please try again.");
@@ -290,7 +315,10 @@ export default function HomePage() {
 
   const logout = async () => {
     await supabase.auth.signOut();
-    window.location.reload();
+    setUser(null);
+    applyProfile(null);
+    setMessage("You have been logged out.");
+    setMessageType("info");
   };
 
   if (loadingUser) {
