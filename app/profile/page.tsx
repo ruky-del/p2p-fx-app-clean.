@@ -48,7 +48,7 @@ export default function ProfilePage() {
 
     setBankName(data?.bank_name || "");
     setAccountNumber(data?.account_number || "");
-    setAccountHolderName(data?.account_holder_name || currentUser?.email || "");
+    setAccountHolderName(data?.account_holder_name || data?.full_name || "");
   };
 
   const loadProfile = async (userId: string) => {
