@@ -81,8 +81,12 @@ export default function MarketPage() {
   const [currency, setCurrency] = useState("GBP");
   const [amount, setAmount] = useState("1000");
   const [area, setArea] = useState("All");
-  const [sortBy, setSortBy] = useState<"closest" | "best_price" | "most_active">(
+  const [sortBy, setSortBy] = useState<"closest" | "best_rate" | "most_active">(
     "closest"
+  );
+  const [bestMatchesOnly, setBestMatchesOnly] = useState(false);
+  const [selectedOffer, setSelectedOffer] = useState<(typeof offersData)[number] | null>(
+    null
   );
 
   const numericAmount = Number(amount) || 0;
@@ -101,19 +105,22 @@ export default function MarketPage() {
         const diffB = Math.abs(b.available - numericAmount);
 
         if (diffA !== diffB) return diffA - diffB;
-
         return side === "buy" ? a.rate - b.rate : b.rate - a.rate;
       }
 
-      if (sortBy === "best_price") {
+      if (sortBy === "best_rate") {
         return side === "buy" ? a.rate - b.rate : b.rate - a.rate;
       }
 
       return b.trades - a.trades;
     });
 
+    if (bestMatchesOnly) {
+      return ranked.slice(0, 3);
+    }
+
     return ranked;
-  }, [side, currency, area, sortBy, numericAmount]);
+  }, [side, currency, area, sortBy, numericAmount, bestMatchesOnly]);
 
   const bestOfferId = filteredOffers[0]?.id;
 
@@ -134,6 +141,8 @@ export default function MarketPage() {
     return `${offer.fromCurrency} → ${offer.toCurrency}`;
   };
 
+  const unlockCost = 1;
+
   return (
     <main className="page">
       <div className="container">
@@ -149,19 +158,19 @@ export default function MarketPage() {
                 className={`btn ${side === "buy" ? "btn-success" : "btn-outline"}`}
                 onClick={() => setSide("buy")}
               >
-                Buy
+                I want to buy
               </button>
 
               <button
                 className={`btn ${side === "sell" ? "btn-dark" : "btn-outline"}`}
                 onClick={() => setSide("sell")}
               >
-                Sell
+                I want to sell
               </button>
             </div>
 
             <label className="input-label">
-              I want to exchange
+              Currency you are exchanging
               <select
                 className="input"
                 value={currency}
@@ -204,13 +213,30 @@ export default function MarketPage() {
                 className="input"
                 value={sortBy}
                 onChange={(e) =>
-                  setSortBy(e.target.value as "closest" | "best_price" | "most_active")
+                  setSortBy(e.target.value as "closest" | "best_rate" | "most_active")
                 }
               >
                 <option value="closest">Closest amount match</option>
-                <option value="best_price">Best rate</option>
+                <option value="best_rate">Best rate</option>
                 <option value="most_active">Most active traders</option>
               </select>
+            </label>
+
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                fontWeight: 600,
+                color: "#334155",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={bestMatchesOnly}
+                onChange={(e) => setBestMatchesOnly(e.target.checked)}
+              />
+              Show best matches only
             </label>
           </div>
         </div>
@@ -218,7 +244,7 @@ export default function MarketPage() {
         <div className="card">
           <h2 className="card-title">Available Offers</h2>
           <p className="card-subtitle">
-            Browse all matching offers or use sorting to find the best exchange match first.
+            Open an offer to review trader details and unlock contact information when you are ready.
           </p>
 
           <div className="offer-list top-space">
@@ -229,7 +255,6 @@ export default function MarketPage() {
             ) : (
               filteredOffers.map((offer) => {
                 const isBestMatch = offer.id === bestOfferId;
-                const buttonLabel = side === "buy" ? "Buy" : "Sell";
 
                 return (
                   <div key={offer.id} className="offer-item">
@@ -279,10 +304,11 @@ export default function MarketPage() {
                       <div className="offer-meta">{offer.speed}</div>
 
                       <button
-                        className={`btn ${side === "buy" ? "btn-success" : "btn-dark"}`}
+                        className="btn btn-success"
                         style={{ marginTop: "14px" }}
+                        onClick={() => setSelectedOffer(offer)}
                       >
-                        {buttonLabel}
+                        Unlock Contact
                       </button>
                     </div>
                   </div>
@@ -295,9 +321,9 @@ export default function MarketPage() {
         <div className="card">
           <h2 className="card-title">Verification Policy</h2>
           <p className="card-subtitle">
-            Traders should complete identity and bank account verification before their payment
-            details are shared. Account names must match the registered identity to improve trust
-            and reduce fraud.
+            Traders should complete identity and bank account verification before their details are
+            shared. Account names must match the registered identity to improve trust and reduce
+            fraud.
           </p>
         </div>
 
@@ -309,6 +335,89 @@ export default function MarketPage() {
           <Link href="/profile">Profile</Link>
         </div>
       </div>
+
+      {selectedOffer && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.55)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            zIndex: 50,
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "520px",
+              background: "#ffffff",
+              borderRadius: "22px",
+              padding: "24px",
+              boxShadow: "0 25px 80px rgba(15, 23, 42, 0.25)",
+            }}
+          >
+            <h2 style={{ margin: 0, fontSize: "1.6rem", color: "#0f172a" }}>
+              Offer Details
+            </h2>
+
+            <p style={{ marginTop: "10px", color: "#475569", lineHeight: 1.6 }}>
+              Review this trader before unlocking contact information.
+            </p>
+
+            <div style={{ marginTop: "18px", display: "grid", gap: "10px" }}>
+              <div><strong>Trader:</strong> {selectedOffer.trader}</div>
+              <div><strong>Area:</strong> {selectedOffer.area}</div>
+              <div><strong>Trades:</strong> {selectedOffer.trades}</div>
+              <div><strong>Rating:</strong> {selectedOffer.rating}</div>
+              <div><strong>Rate:</strong> {renderRate(selectedOffer)}</div>
+              <div>
+                <strong>Available:</strong>{" "}
+                {formatAmount(selectedOffer.available, selectedOffer.fromCurrency)}
+              </div>
+              <div>
+                <strong>Verification:</strong>{" "}
+                {selectedOffer.verified
+                  ? "Verified account details matched"
+                  : "Pending verification"}
+              </div>
+              <div><strong>Response speed:</strong> {selectedOffer.speed}</div>
+            </div>
+
+            <div
+              style={{
+                marginTop: "18px",
+                padding: "14px 16px",
+                borderRadius: "14px",
+                background: "#f8fafc",
+                color: "#334155",
+                lineHeight: 1.6,
+              }}
+            >
+              You need <strong>{unlockCost} credit</strong> to unlock this trader’s contact details.
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "12px",
+                marginTop: "20px",
+              }}
+            >
+              <button className="btn btn-outline" onClick={() => setSelectedOffer(null)}>
+                Close
+              </button>
+
+              <Link href="/" className="btn btn-success" style={{ textAlign: "center" }}>
+                Buy Credits
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
