@@ -337,7 +337,7 @@ export default function HomePage() {
     <main className="page">
       <div className="container">
         <div className="hero-card">
-          <div className="eyebrow">Tanzania ↔ UK Exchange Network</div>
+          <div className="eyebrow eyebrow-visible">Tanzania ↔ UK Exchange Network</div>
           <h1>P2P FX Marketplace</h1>
           <p>
             A trusted peer-to-peer platform connecting people who need to exchange
@@ -418,7 +418,7 @@ export default function HomePage() {
         </div>
 
         {!user && (
-          <div className="card">
+          <div className="card" id="buy-credits">
             <h2 className="card-title">Welcome to P2P FX</h2>
             <p className="card-subtitle">
               Log in or create your account to manage your profile, unlock trader

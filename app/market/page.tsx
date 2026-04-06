@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 const offersData = [
   {
@@ -77,6 +78,7 @@ const offersData = [
 ];
 
 export default function MarketPage() {
+  const [user, setUser] = useState<any>(null);
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [currency, setCurrency] = useState("GBP");
   const [amount, setAmount] = useState("1000");
@@ -88,6 +90,28 @@ export default function MarketPage() {
   const [selectedOffer, setSelectedOffer] = useState<(typeof offersData)[number] | null>(
     null
   );
+  const [notice, setNotice] = useState("");
+  const [showCreditNotice, setShowCreditNotice] = useState(false);
+
+  useEffect(() => {
+    const getSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      setUser(session?.user ?? null);
+    };
+
+    getSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const numericAmount = Number(amount) || 0;
 
@@ -141,7 +165,15 @@ export default function MarketPage() {
     return `${offer.fromCurrency} → ${offer.toCurrency}`;
   };
 
-  const unlockCost = 1;
+  const handleNeedCredits = () => {
+    if (!user) {
+      setShowCreditNotice(true);
+      setNotice("You need to log in first before buying credits.");
+      return;
+    }
+
+    window.location.href = "/#buy-credits";
+  };
 
   return (
     <main className="page">
@@ -240,6 +272,13 @@ export default function MarketPage() {
             </label>
           </div>
         </div>
+
+        {notice && (
+          <div className="card message-warn">
+            <h2 className="card-title">Notice</h2>
+            <p className="card-subtitle">{notice}</p>
+          </div>
+        )}
 
         <div className="card">
           <h2 className="card-title">Available Offers</h2>
@@ -396,7 +435,7 @@ export default function MarketPage() {
                 lineHeight: 1.6,
               }}
             >
-              You need <strong>{unlockCost} credit</strong> to unlock this trader’s contact details.
+              You need <strong>1 credit</strong> to unlock this trader’s contact details.
             </div>
 
             <div
@@ -411,8 +450,67 @@ export default function MarketPage() {
                 Close
               </button>
 
-              <Link href="/" className="btn btn-success" style={{ textAlign: "center" }}>
+              <button className="btn btn-success" onClick={handleNeedCredits}>
                 Buy Credits
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCreditNotice && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            zIndex: 60,
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "460px",
+              background: "#ffffff",
+              borderRadius: "22px",
+              padding: "24px",
+              boxShadow: "0 25px 80px rgba(15, 23, 42, 0.25)",
+            }}
+          >
+            <h2 style={{ margin: 0, fontSize: "1.5rem", color: "#0f172a" }}>
+              Login Required
+            </h2>
+
+            <p style={{ marginTop: "12px", color: "#475569", lineHeight: 1.7 }}>
+              You need to log in first before buying credits or unlocking trader contacts.
+            </p>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "12px",
+                marginTop: "20px",
+              }}
+            >
+              <button
+                className="btn btn-outline"
+                onClick={() => setShowCreditNotice(false)}
+              >
+                Close
+              </button>
+
+              <Link
+                href="/"
+                className="btn btn-primary"
+                style={{ textAlign: "center" }}
+                onClick={() => setShowCreditNotice(false)}
+              >
+                Go to Login
               </Link>
             </div>
           </div>

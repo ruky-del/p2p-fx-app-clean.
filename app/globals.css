@@ -344,3 +344,62 @@ a {
     text-align: left;
   }
 }
+.eyebrow-visible {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.16);
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 640px) {
+  .hero-card {
+    padding: 18px;
+  }
+
+  .hero-card h1 {
+    font-size: 2rem;
+    line-height: 1.1;
+  }
+
+  .hero-card p {
+    font-size: 0.98rem;
+  }
+
+  .stat-box {
+    padding: 14px;
+  }
+
+  .btn {
+    padding: 12px 14px;
+    font-size: 0.98rem;
+    border-radius: 12px;
+  }
+
+  .card {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .offer-item {
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .offer-rate {
+    font-size: 1.15rem;
+  }
+
+  .nav {
+    padding: 6px;
+    border-radius: 16px;
+  }
+
+  .nav a {
+    padding: 12px 8px;
+    font-size: 0.95rem;
+  }
+}
