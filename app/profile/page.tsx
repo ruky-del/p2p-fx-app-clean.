@@ -18,6 +18,29 @@ type ProfileRow = {
   verification_status: string | null;
 };
 
+const countryCityMap: Record<string, string[]> = {
+  "United Kingdom": [
+    "London",
+    "Birmingham",
+    "Manchester",
+    "Glasgow",
+    "Liverpool",
+    "Leeds",
+    "Bristol",
+    "Edinburgh",
+  ],
+  Tanzania: [
+    "Dar es Salaam",
+    "Dodoma",
+    "Arusha",
+    "Mwanza",
+    "Mbeya",
+    "Zanzibar",
+    "Morogoro",
+    "Tanga",
+  ],
+};
+
 export default function ProfilePage() {
   const [loading, setLoading] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -38,7 +61,7 @@ export default function ProfilePage() {
   const [accountNumber, setAccountNumber] = useState("");
   const [accountHolderName, setAccountHolderName] = useState("");
 
-  const applyProfile = (data: ProfileRow | null, currentUser?: any) => {
+  const applyProfile = (data: ProfileRow | null) => {
     setProfile(data);
 
     setFullName(data?.full_name || "");
@@ -68,7 +91,6 @@ export default function ProfilePage() {
 
   const syncUserAndProfile = async () => {
     try {
-
       const {
         data: { session },
         error,
@@ -92,7 +114,7 @@ export default function ProfilePage() {
       const existingProfile = await loadProfile(currentUser.id);
 
       if (existingProfile) {
-        applyProfile(existingProfile, currentUser);
+        applyProfile(existingProfile);
         return;
       }
 
@@ -117,11 +139,9 @@ export default function ProfilePage() {
       }
 
       const refreshed = await loadProfile(currentUser.id);
-      applyProfile(refreshed, currentUser);
+      applyProfile(refreshed);
     } catch (error) {
       console.error(error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -140,13 +160,17 @@ export default function ProfilePage() {
       }
 
       const latest = await loadProfile(currentUser.id);
-      applyProfile(latest, currentUser);
+      applyProfile(latest);
     });
 
     return () => {
       subscription.unsubscribe();
     };
   }, []);
+
+  const cityOptions = useMemo(() => {
+    return country ? countryCityMap[country] || [] : [];
+  }, [country]);
 
   const verificationLabel = useMemo(() => {
     const status = profile?.verification_status || "not_submitted";
@@ -155,6 +179,36 @@ export default function ProfilePage() {
     if (status === "pending") return "Pending Review";
     if (status === "rejected") return "Rejected";
     return "Not Submitted";
+  }, [profile?.verification_status]);
+
+  const verificationBadgeStyle = useMemo(() => {
+    const status = profile?.verification_status || "not_submitted";
+
+    if (status === "verified") {
+      return {
+        background: "#dcfce7",
+        color: "#166534",
+      };
+    }
+
+    if (status === "pending") {
+      return {
+        background: "#fef3c7",
+        color: "#92400e",
+      };
+    }
+
+    if (status === "rejected") {
+      return {
+        background: "#fee2e2",
+        color: "#991b1b",
+      };
+    }
+
+    return {
+      background: "#e2e8f0",
+      color: "#334155",
+    };
   }, [profile?.verification_status]);
 
   const saveBasicProfile = async () => {
@@ -185,7 +239,7 @@ export default function ProfilePage() {
       }
 
       const latest = await loadProfile(user.id);
-      applyProfile(latest, user);
+      applyProfile(latest);
 
       setMessage("Profile saved successfully.");
       setMessageType("success");
@@ -212,13 +266,19 @@ export default function ProfilePage() {
     }
 
     if (!country.trim() || !city.trim()) {
-      setMessage("Enter your country and city before submitting verification.");
+      setMessage("Choose your country and city before submitting verification.");
       setMessageType("warn");
       return;
     }
 
     if (!bankName.trim() || !accountNumber.trim() || !accountHolderName.trim()) {
       setMessage("Complete all bank verification fields first.");
+      setMessageType("warn");
+      return;
+    }
+
+    if (accountNumber.trim().length < 6) {
+      setMessage("Account number looks too short. Please check it and try again.");
       setMessageType("warn");
       return;
     }
@@ -233,20 +293,18 @@ export default function ProfilePage() {
 
       const nextStatus = autoMismatch ? "rejected" : "pending";
 
-      const { error } = await supabase
-        .from("profiles")
-        .upsert({
-          id: user.id,
-          full_name: fullName.trim(),
-          phone: phone.trim(),
-          email: user.email,
-          country: country.trim(),
-          city: city.trim(),
-          bank_name: bankName.trim(),
-          account_number: accountNumber.trim(),
-          account_holder_name: accountHolderName.trim(),
-          verification_status: nextStatus,
-        });
+      const { error } = await supabase.from("profiles").upsert({
+        id: user.id,
+        full_name: fullName.trim(),
+        phone: phone.trim(),
+        email: user.email,
+        country: country.trim(),
+        city: city.trim(),
+        bank_name: bankName.trim(),
+        account_number: accountNumber.trim(),
+        account_holder_name: accountHolderName.trim(),
+        verification_status: nextStatus,
+      });
 
       if (error) {
         setMessage(error.message);
@@ -255,11 +313,11 @@ export default function ProfilePage() {
       }
 
       const latest = await loadProfile(user.id);
-      applyProfile(latest, user);
+      applyProfile(latest);
 
       if (autoMismatch) {
         setMessage(
-          "Verification could not move forward because the account holder name does not match the full legal name on the profile."
+          "Verification was declined because the account holder name does not match your full legal name."
         );
         setMessageType("warn");
       } else {
@@ -281,7 +339,6 @@ export default function ProfilePage() {
     await supabase.auth.signOut();
     window.location.href = "/";
   };
-
 
   if (!user) {
     return (
@@ -313,8 +370,7 @@ export default function ProfilePage() {
           <div className="eyebrow">Profile & Verification</div>
           <h1>Account Centre</h1>
           <p>
-            Complete your identity and bank verification details to improve trust and
-            qualify as a verified trader.
+            Complete your identity and bank verification details to improve trust and qualify as a verified trader.
           </p>
 
           <div className="stats-grid">
@@ -322,14 +378,26 @@ export default function ProfilePage() {
               <span className="stat-label">Credits</span>
               <strong>{profile?.credits || 0}</strong>
             </div>
+
             <div className="stat-box">
               <span className="stat-label">Verification</span>
-              <strong>{verificationLabel}</strong>
+              <strong
+                style={{
+                  display: "inline-block",
+                  padding: "8px 12px",
+                  borderRadius: "12px",
+                  ...verificationBadgeStyle,
+                }}
+              >
+                {verificationLabel}
+              </strong>
             </div>
+
             <div className="stat-box">
               <span className="stat-label">Country</span>
               <strong>{profile?.country || "-"}</strong>
             </div>
+
             <div className="stat-box">
               <span className="stat-label">City</span>
               <strong>{profile?.city || "-"}</strong>
@@ -361,8 +429,7 @@ export default function ProfilePage() {
         <div className="card">
           <h2 className="card-title">Personal Details</h2>
           <p className="card-subtitle">
-            Enter your real identity details. These should match your bank account
-            details for verification purposes.
+            Enter your real identity details. These should match your bank account details for verification purposes.
           </p>
 
           <div className="form-stack top-space">
@@ -380,7 +447,7 @@ export default function ProfilePage() {
               Phone number
               <input
                 className="input"
-                placeholder="Enter your phone number"
+                placeholder="+255 757 962 720 or +44 7577 962720"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
               />
@@ -388,22 +455,35 @@ export default function ProfilePage() {
 
             <label className="input-label">
               Country
-              <input
+              <select
                 className="input"
-                placeholder="e.g. United Kingdom or Tanzania"
                 value={country}
-                onChange={(e) => setCountry(e.target.value)}
-              />
+                onChange={(e) => {
+                  setCountry(e.target.value);
+                  setCity("");
+                }}
+              >
+                <option value="">Select country</option>
+                <option value="United Kingdom">United Kingdom</option>
+                <option value="Tanzania">Tanzania</option>
+              </select>
             </label>
 
             <label className="input-label">
               City
-              <input
+              <select
                 className="input"
-                placeholder="e.g. London or Dar es Salaam"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-              />
+                disabled={!country}
+              >
+                <option value="">{country ? "Select city" : "Choose country first"}</option>
+                {cityOptions.map((cityName) => (
+                  <option key={cityName} value={cityName}>
+                    {cityName}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <button
@@ -419,8 +499,7 @@ export default function ProfilePage() {
         <div className="card">
           <h2 className="card-title">Bank Verification</h2>
           <p className="card-subtitle">
-            Your bank account name should match your full legal name exactly before
-            your trader account can be approved.
+            Your bank account name should match your full legal name exactly before your trader account can be approved.
           </p>
 
           <div className="form-stack top-space">
@@ -428,7 +507,7 @@ export default function ProfilePage() {
               Bank name
               <input
                 className="input"
-                placeholder="e.g. CRDB, NMB, Barclays, Lloyds"
+                placeholder="e.g. CRDB, NMB, Lloyds, Barclays"
                 value={bankName}
                 onChange={(e) => setBankName(e.target.value)}
               />
@@ -448,7 +527,7 @@ export default function ProfilePage() {
               Account holder name
               <input
                 className="input"
-                placeholder="Must match full legal name"
+                placeholder="Must match your full legal name"
                 value={accountHolderName}
                 onChange={(e) => setAccountHolderName(e.target.value)}
               />
