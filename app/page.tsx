@@ -24,7 +24,7 @@ export default function HomePage() {
 
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "warn" | "info">("info");
-  const [loadingUser, setLoadingUser] = useState(true);
+  const [loadingUser, setLoadingUser] = useState(false);
 
   const [authEmail, setAuthEmail] = useState("");
   const [authCode, setAuthCode] = useState("");
@@ -326,19 +326,8 @@ export default function HomePage() {
     <main className="page">
       <div className="container">
         <div className="card">
-          <h2 className="card-title">Welcome to P2P FX</h2>
-          <p className="card-subtitle">
-            We are preparing your dashboard. If this takes too long, refresh the page.
-          </p>
-
-          <div className="top-space">
-            <button
-              className="btn btn-outline"
-              onClick={() => window.location.reload()}
-            >
-              Refresh Page
-            </button>
-          </div>
+          <h2 className="card-title">Loading...</h2>
+          <p className="card-subtitle">Please wait a moment.</p>
         </div>
       </div>
     </main>
