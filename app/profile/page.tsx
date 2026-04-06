@@ -19,7 +19,7 @@ type ProfileRow = {
 };
 
 export default function ProfilePage() {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [submittingVerification, setSubmittingVerification] = useState(false);
 
@@ -68,7 +68,6 @@ export default function ProfilePage() {
 
   const syncUserAndProfile = async () => {
     try {
-      setLoading(true);
 
       const {
         data: { session },
@@ -283,18 +282,6 @@ export default function ProfilePage() {
     window.location.href = "/";
   };
 
-  if (loading) {
-    return (
-      <main className="page">
-        <div className="container">
-          <div className="card">
-            <h2 className="card-title">Loading profile...</h2>
-            <p className="card-subtitle">Please wait while we prepare your account.</p>
-          </div>
-        </div>
-      </main>
-    );
-  }
 
   if (!user) {
     return (
