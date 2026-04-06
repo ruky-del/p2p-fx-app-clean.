@@ -272,7 +272,7 @@ export default function MarketPage() {
 
                     <div className="offer-side">
                       <div className="offer-rate">
-                        1 {offer.asset} = {offer.price.toLocaleString()} {offer.fiat}
+                        £1 = {offer.price.toLocaleString()} TZS
                       </div>
                       <div className="offer-meta">{offer.time}</div>
 
