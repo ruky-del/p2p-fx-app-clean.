@@ -6,54 +6,45 @@ import { useMemo, useState } from "react";
 const offersData = [
   {
     id: 1,
-    trader: "Alice Trader",
-    rating: "94.45%",
-    trades: 81,
-    side: "buy",
-    fiat: "GBP",
-    asset: "USDT",
-    price: 3150,
-    min: 500,
-    max: 2000,
-    available: 1500,
-    area: "London",
-    payment: ["Bank Transfer", "Monzo"],
-    time: "15 min",
-    verified: true,
-  },
-  {
-    id: 2,
     trader: "Dar Exchange",
     rating: "98.20%",
     trades: 214,
     side: "buy",
-    fiat: "GBP",
-    asset: "USDT",
-    price: 3120,
-    min: 200,
-    max: 1000,
+    fromCurrency: "GBP",
+    toCurrency: "TZS",
+    rate: 3120,
     available: 980,
     area: "Dar es Salaam",
-    payment: ["Tigo Pesa", "Bank"],
-    time: "10 min",
     verified: true,
+    speed: "10 min",
   },
   {
-    id: 3,
+    id: 2,
     trader: "UK Seller",
     rating: "99.10%",
     trades: 402,
     side: "buy",
-    fiat: "GBP",
-    asset: "USDT",
-    price: 3140,
-    min: 100,
-    max: 5000,
+    fromCurrency: "GBP",
+    toCurrency: "TZS",
+    rate: 3140,
     available: 900,
     area: "Birmingham",
-    payment: ["Bank Transfer"],
-    time: "20 min",
-    verified: false,
+    verified: true,
+    speed: "20 min",
+  },
+  {
+    id: 3,
+    trader: "Alice Trader",
+    rating: "94.45%",
+    trades: 81,
+    side: "buy",
+    fromCurrency: "GBP",
+    toCurrency: "TZS",
+    rate: 3150,
+    available: 1500,
+    area: "London",
+    verified: true,
+    speed: "15 min",
   },
   {
     id: 4,
@@ -61,16 +52,13 @@ const offersData = [
     rating: "97.80%",
     trades: 350,
     side: "sell",
-    fiat: "TZS",
-    asset: "USDT",
-    price: 2618,
-    min: 10000,
-    max: 500000,
-    available: 397.9,
+    fromCurrency: "TZS",
+    toCurrency: "GBP",
+    rate: 2618,
+    available: 397900,
     area: "Dar es Salaam",
-    payment: ["M-Pesa", "Airtel Money"],
-    time: "15 min",
     verified: true,
+    speed: "15 min",
   },
   {
     id: 5,
@@ -78,16 +66,13 @@ const offersData = [
     rating: "99.49%",
     trades: 1902,
     side: "sell",
-    fiat: "TZS",
-    asset: "USDT",
-    price: 2553.99,
-    min: 10000,
-    max: 15152235,
-    available: 5932.77,
+    fromCurrency: "TZS",
+    toCurrency: "GBP",
+    rate: 2553.99,
+    available: 5932770,
     area: "Mwanza",
-    payment: ["NMB", "CRDB", "Tigo Money"],
-    time: "15 min",
     verified: true,
+    speed: "15 min",
   },
 ];
 
@@ -96,14 +81,16 @@ export default function MarketPage() {
   const [currency, setCurrency] = useState("GBP");
   const [amount, setAmount] = useState("1000");
   const [area, setArea] = useState("All");
-  const [sortBy, setSortBy] = useState<"closest" | "best_price" | "newest">("closest");
+  const [sortBy, setSortBy] = useState<"closest" | "best_price" | "most_active">(
+    "closest"
+  );
 
   const numericAmount = Number(amount) || 0;
 
   const filteredOffers = useMemo(() => {
     let base = offersData.filter((offer) => {
       const sideMatch = offer.side === side;
-      const currencyMatch = offer.fiat === currency;
+      const currencyMatch = offer.fromCurrency === currency;
       const areaMatch = area === "All" || offer.area === area;
       return sideMatch && currencyMatch && areaMatch;
     });
@@ -112,22 +99,40 @@ export default function MarketPage() {
       if (sortBy === "closest") {
         const diffA = Math.abs(a.available - numericAmount);
         const diffB = Math.abs(b.available - numericAmount);
+
         if (diffA !== diffB) return diffA - diffB;
 
-        return side === "buy" ? a.price - b.price : b.price - a.price;
+        return side === "buy" ? a.rate - b.rate : b.rate - a.rate;
       }
 
       if (sortBy === "best_price") {
-        return side === "buy" ? a.price - b.price : b.price - a.price;
+        return side === "buy" ? a.rate - b.rate : b.rate - a.rate;
       }
 
       return b.trades - a.trades;
     });
 
     return ranked;
-  }, [side, currency, amount, area, sortBy, numericAmount]);
+  }, [side, currency, area, sortBy, numericAmount]);
 
   const bestOfferId = filteredOffers[0]?.id;
+
+  const formatAmount = (value: number, curr: string) => {
+    if (curr === "GBP") return `£${value.toLocaleString()}`;
+    return `${value.toLocaleString()} TZS`;
+  };
+
+  const renderRate = (offer: (typeof offersData)[number]) => {
+    if (offer.fromCurrency === "GBP" && offer.toCurrency === "TZS") {
+      return `£1 = ${offer.rate.toLocaleString()} TZS`;
+    }
+
+    if (offer.fromCurrency === "TZS" && offer.toCurrency === "GBP") {
+      return `1 GBP = ${offer.rate.toLocaleString()} TZS`;
+    }
+
+    return `${offer.fromCurrency} → ${offer.toCurrency}`;
+  };
 
   return (
     <main className="page">
@@ -135,7 +140,7 @@ export default function MarketPage() {
         <div className="card">
           <h2 className="card-title">Marketplace</h2>
           <p className="card-subtitle">
-            Find the best exchange partner based on currency, amount, area and price.
+            Find the best exchange partner based on currency, amount, area and match quality.
           </p>
 
           <div className="form-stack top-space">
@@ -156,7 +161,7 @@ export default function MarketPage() {
             </div>
 
             <label className="input-label">
-              Currency
+              I want to exchange
               <select
                 className="input"
                 value={currency}
@@ -172,7 +177,7 @@ export default function MarketPage() {
               <input
                 className="input"
                 type="number"
-                placeholder="Enter target amount"
+                placeholder="Enter amount"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
               />
@@ -199,12 +204,12 @@ export default function MarketPage() {
                 className="input"
                 value={sortBy}
                 onChange={(e) =>
-                  setSortBy(e.target.value as "closest" | "best_price" | "newest")
+                  setSortBy(e.target.value as "closest" | "best_price" | "most_active")
                 }
               >
                 <option value="closest">Closest amount match</option>
-                <option value="best_price">Best price</option>
-                <option value="newest">Most active traders</option>
+                <option value="best_price">Best rate</option>
+                <option value="most_active">Most active traders</option>
               </select>
             </label>
           </div>
@@ -219,7 +224,7 @@ export default function MarketPage() {
           <div className="offer-list top-space">
             {filteredOffers.length === 0 ? (
               <p className="empty-state">
-                No offers match your current filters. Try changing the currency, area, or amount.
+                No offers match your current filters. Try changing the amount, area or currency.
               </p>
             ) : (
               filteredOffers.map((offer) => {
@@ -233,7 +238,7 @@ export default function MarketPage() {
                         {offer.trader}{" "}
                         {offer.verified ? (
                           <span style={{ fontSize: "0.85rem", color: "#2563eb" }}>
-                            • Verified
+                            • Verified Trader
                           </span>
                         ) : null}
                       </h3>
@@ -243,14 +248,13 @@ export default function MarketPage() {
                       </p>
 
                       <p style={{ marginTop: "8px" }}>
-                        Limit: {offer.min.toLocaleString()} - {offer.max.toLocaleString()} {offer.fiat}
+                        Available: {formatAmount(offer.available, offer.fromCurrency)}
                       </p>
 
                       <p>
-                        Available: {offer.available.toLocaleString()} {offer.fiat}
+                        Account status:{" "}
+                        {offer.verified ? "Verified account details matched" : "Pending verification"}
                       </p>
-
-                      <p>Payment: {offer.payment.join(", ")}</p>
 
                       {isBestMatch ? (
                         <div
@@ -271,10 +275,8 @@ export default function MarketPage() {
                     </div>
 
                     <div className="offer-side">
-                      <div className="offer-rate">
-                        £1 = {offer.price.toLocaleString()} TZS
-                      </div>
-                      <div className="offer-meta">{offer.time}</div>
+                      <div className="offer-rate">{renderRate(offer)}</div>
+                      <div className="offer-meta">{offer.speed}</div>
 
                       <button
                         className={`btn ${side === "buy" ? "btn-success" : "btn-dark"}`}
@@ -288,6 +290,15 @@ export default function MarketPage() {
               })
             )}
           </div>
+        </div>
+
+        <div className="card">
+          <h2 className="card-title">Verification Policy</h2>
+          <p className="card-subtitle">
+            Traders should complete identity and bank account verification before their payment
+            details are shared. Account names must match the registered identity to improve trust
+            and reduce fraud.
+          </p>
         </div>
 
         <div className="nav">
