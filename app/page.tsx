@@ -27,6 +27,7 @@ export default function HomePage() {
   const [authCode, setAuthCode] = useState("");
   const [authStep, setAuthStep] = useState<"email" | "code">("email");
   const [authLoading, setAuthLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -54,12 +55,12 @@ export default function HomePage() {
         const params = new URLSearchParams(window.location.search);
 
         if (params.get("success") === "true") {
-          setMessage("Payment successful. Your credits have been added.");
+          setMessage("Payment successful. Your credits have been added to your account.");
           setMessageType("success");
         }
 
         if (params.get("canceled") === "true") {
-          setMessage("Payment cancelled. You can try again any time.");
+          setMessage("Payment was cancelled. You can try again any time.");
           setMessageType("warn");
         }
       } catch (error) {
@@ -104,9 +105,25 @@ export default function HomePage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (cooldown <= 0) return;
+
+    const timer = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [cooldown]);
+
   const saveProfile = async () => {
     if (!user) {
-      setMessage("Please log in first.");
+      setMessage("Please log in first before updating your profile.");
       setMessageType("warn");
       return;
     }
@@ -141,7 +158,7 @@ export default function HomePage() {
       setMessageType("success");
     } catch (error) {
       console.error(error);
-      setMessage("Failed to save profile.");
+      setMessage("We could not save your profile. Please try again.");
       setMessageType("warn");
     } finally {
       setSavingProfile(false);
@@ -183,7 +200,7 @@ export default function HomePage() {
         return;
       }
 
-      setMessage("Checkout link not returned.");
+      setMessage("Checkout link was not returned. Please try again.");
       setMessageType("warn");
     } catch (error) {
       console.error(error);
@@ -201,6 +218,12 @@ export default function HomePage() {
       return;
     }
 
+    if (cooldown > 0) {
+      setMessage(`Please wait ${cooldown} seconds before requesting another code.`);
+      setMessageType("info");
+      return;
+    }
+
     try {
       setAuthLoading(true);
 
@@ -209,17 +232,22 @@ export default function HomePage() {
       });
 
       if (error) {
-        setMessage(error.message);
+        setMessage(
+          error.message === "email rate limit exceeded"
+            ? "Too many login requests were made. Please wait a short moment and try again."
+            : error.message
+        );
         setMessageType("warn");
         return;
       }
 
       setAuthStep("code");
+      setCooldown(30);
       setMessage("We sent a secure login code to your email. Enter it below to continue.");
       setMessageType("info");
     } catch (error) {
       console.error(error);
-      setMessage("Could not send login code.");
+      setMessage("We could not send your login code. Please try again.");
       setMessageType("warn");
     } finally {
       setAuthLoading(false);
@@ -228,7 +256,7 @@ export default function HomePage() {
 
   const handleVerifyCode = async () => {
     if (!authEmail.trim() || !authCode.trim()) {
-      setMessage("Please enter both your email and the login code.");
+      setMessage("Please enter both your email address and the login code.");
       setMessageType("warn");
       return;
     }
@@ -243,7 +271,7 @@ export default function HomePage() {
       });
 
       if (error) {
-        setMessage("Invalid or expired code. Please try again.");
+        setMessage("The code is invalid or has expired. Please request a new one.");
         setMessageType("warn");
         return;
       }
@@ -253,7 +281,7 @@ export default function HomePage() {
       window.location.reload();
     } catch (error) {
       console.error(error);
-      setMessage("Could not verify your code.");
+      setMessage("We could not verify your code. Please try again.");
       setMessageType("warn");
     } finally {
       setAuthLoading(false);
@@ -332,7 +360,11 @@ export default function HomePage() {
             }`}
           >
             <h2 className="card-title">
-              {messageType === "success" ? "Success" : messageType === "warn" ? "Notice" : "Update"}
+              {messageType === "success"
+                ? "Success"
+                : messageType === "warn"
+                ? "Notice"
+                : "Update"}
             </h2>
             <p className="card-subtitle">{message}</p>
           </div>
@@ -395,9 +427,13 @@ export default function HomePage() {
                 <button
                   className="btn btn-primary"
                   onClick={handleSendCode}
-                  disabled={authLoading}
+                  disabled={authLoading || cooldown > 0}
                 >
-                  {authLoading ? "Sending code..." : "Send Login Code"}
+                  {authLoading
+                    ? "Sending code..."
+                    : cooldown > 0
+                    ? `Please wait ${cooldown}s`
+                    : "Send Login Code"}
                 </button>
               ) : (
                 <>
@@ -420,6 +456,14 @@ export default function HomePage() {
                     disabled={authLoading}
                   >
                     Change Email
+                  </button>
+
+                  <button
+                    className="btn btn-outline"
+                    onClick={handleSendCode}
+                    disabled={authLoading || cooldown > 0}
+                  >
+                    {cooldown > 0 ? `Resend available in ${cooldown}s` : "Resend Code"}
                   </button>
                 </>
               )}
