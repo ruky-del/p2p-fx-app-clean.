@@ -490,3 +490,225 @@ a {
 .card-subtitle {
   color: #94a3b8;
 }
+/* ===== RAFIKI / BINANCE-STYLE PALETTE ===== */
+:root {
+  --bg-main: #181f2c;
+  --bg-panel: #1f2633;
+  --bg-panel-2: #222b3a;
+  --border-soft: #2c3545;
+  --text-main: #f3f4f6;
+  --text-strong: #ffffff;
+  --text-muted: #b6beca;
+  --text-soft: #8f98a8;
+  --brand-accent: #f0b90b;
+  --buy-calm: #2ebd85;
+  --buy-calm-hover: #26a874;
+  --sell-calm: #f6465d;
+  --sell-calm-hover: #df3d53;
+}
+
+/* page background */
+body,
+.page {
+  background: var(--bg-main);
+  color: var(--text-main);
+}
+
+/* generic cards */
+.card,
+.hero-card,
+.info-card,
+.stat-box,
+.nav {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  color: var(--text-main);
+}
+
+/* section titles */
+.card-title,
+.hero-card h1,
+.info-card h3,
+.stat-box strong {
+  color: var(--text-strong);
+}
+
+.card-subtitle,
+.hero-card p,
+.info-card p,
+.stat-label,
+.helper-text {
+  color: var(--text-muted);
+}
+
+/* eyebrow / accent */
+.eyebrow,
+.eyebrow-visible {
+  color: var(--brand-accent);
+  background: rgba(240, 185, 11, 0.1);
+  border: 1px solid rgba(240, 185, 11, 0.18);
+}
+
+/* ===== MARKET OFFER OVERRIDES ===== */
+/* force dark offer cards even if different class names were used */
+.offer-card,
+.market-card,
+.trade-card,
+.offer-box,
+.offer-item,
+.listing-card,
+.available-offers .card,
+.available-offers > div,
+.market-list > div,
+.market-grid > div {
+  background: var(--bg-panel) !important;
+  border: 1px solid var(--border-soft) !important;
+  border-radius: 18px !important;
+  color: var(--text-main) !important;
+  box-shadow: none !important;
+}
+
+/* if inline white bg was used inside cards */
+.offer-card *,
+.market-card *,
+.trade-card *,
+.offer-box *,
+.offer-item *,
+.listing-card * {
+  border-color: var(--border-soft);
+}
+
+/* names + main text */
+.offer-card h3,
+.market-card h3,
+.trade-card h3,
+.offer-box h3,
+.offer-item h3,
+.listing-card h3,
+.offer-card strong,
+.market-card strong,
+.trade-card strong,
+.offer-box strong,
+.offer-item strong,
+.listing-card strong {
+  color: var(--text-strong) !important;
+}
+
+/* make trader name visible */
+.offer-card .trader-name,
+.market-card .trader-name,
+.trade-card .trader-name,
+.offer-box .trader-name,
+.offer-item .trader-name,
+.listing-card .trader-name {
+  color: var(--text-strong) !important;
+  font-weight: 700 !important;
+}
+
+/* rate + amount should be bright and obvious */
+.rate,
+.exchange-rate,
+.offer-rate,
+.price,
+.amount,
+.available-amount,
+.offer-amount {
+  color: var(--text-strong) !important;
+  font-weight: 800 !important;
+}
+
+/* meta / muted lines */
+.offer-meta,
+.offer-details,
+.payment-methods,
+.response-time,
+.account-status,
+.available-label,
+.limit-label,
+.area-label {
+  color: var(--text-muted) !important;
+}
+
+/* buy button */
+.btn-success,
+.buy-btn,
+.offer-buy,
+.action-buy {
+  background: var(--buy-calm) !important;
+  border: 1px solid var(--buy-calm) !important;
+  color: #f8fffb !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+}
+
+.btn-success:hover,
+.buy-btn:hover,
+.offer-buy:hover,
+.action-buy:hover {
+  background: var(--buy-calm-hover) !important;
+  border-color: var(--buy-calm-hover) !important;
+}
+
+/* sell button */
+.sell-btn,
+.btn-sell,
+.action-sell {
+  background: var(--sell-calm) !important;
+  border: 1px solid var(--sell-calm) !important;
+  color: #fff5f7 !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+}
+
+.sell-btn:hover,
+.btn-sell:hover,
+.action-sell:hover {
+  background: var(--sell-calm-hover) !important;
+  border-color: var(--sell-calm-hover) !important;
+}
+
+/* verification / accent tags */
+.badge,
+.tag,
+.verified-badge,
+.best-match,
+.account-verified {
+  background: rgba(240, 185, 11, 0.12) !important;
+  color: var(--brand-accent) !important;
+  border: 1px solid rgba(240, 185, 11, 0.18) !important;
+}
+
+/* nav */
+.nav a {
+  color: var(--text-soft);
+}
+
+.nav a.active {
+  color: var(--brand-accent);
+}
+
+/* inputs / filters */
+.input,
+select,
+.filter-chip,
+.filter-bar,
+.sort-box {
+  background: var(--bg-panel-2) !important;
+  border: 1px solid var(--border-soft) !important;
+  color: var(--text-main) !important;
+}
+
+/* mobile */
+@media (max-width: 640px) {
+  .card,
+  .hero-card,
+  .offer-card,
+  .market-card,
+  .trade-card,
+  .offer-box,
+  .offer-item,
+  .listing-card {
+    border-radius: 16px !important;
+  }
+}
