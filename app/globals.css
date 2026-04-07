@@ -1174,7 +1174,7 @@ select,
 }
 
 .nav a.active {
-  background: red;
+  background: 232c3b;
   color: #f0b90b;
   border: 1px solid #344055;
 }
