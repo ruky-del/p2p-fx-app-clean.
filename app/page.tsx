@@ -24,7 +24,6 @@ export default function HomePage() {
 
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "warn" | "info">("info");
-  const [loadingUser, setLoadingUser] = useState(false);
 
   const [authEmail, setAuthEmail] = useState("");
   const [authCode, setAuthCode] = useState("");
@@ -55,7 +54,6 @@ export default function HomePage() {
 
   const syncCurrentUser = async () => {
     try {
-
       const {
         data: { session },
         error,
@@ -82,8 +80,6 @@ export default function HomePage() {
       console.error("syncCurrentUser error:", error);
       setUser(null);
       applyProfile(null);
-    } finally {
-      setLoadingUser(false);
     }
   };
 
@@ -100,6 +96,15 @@ export default function HomePage() {
     if (params.get("canceled") === "true") {
       setMessage("Payment was cancelled. You can try again any time.");
       setMessageType("warn");
+    }
+
+    if (params.get("buyCredits") === "1") {
+      setTimeout(() => {
+        const section = document.getElementById("buy-credits");
+        if (section) {
+          section.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 400);
     }
 
     const {
@@ -320,23 +325,25 @@ export default function HomePage() {
     setMessageType("info");
   };
 
-  
   return (
     <main className="page">
       <div className="container">
         <div className="hero-card">
           <div className="eyebrow eyebrow-visible">Tanzania ↔ UK Exchange Network</div>
-         <h1>Rafiki</h1>
-<p className="hero-slogan">Exchange with Rafiki</p>
+          <h1>Rafiki</h1>
+          <p className="hero-slogan">Exchange with Rafiki</p>
+
           <p>
             A trusted peer-to-peer platform connecting people who need to exchange
             money between Tanzania and the UK — without bank limits, delays, or
             unnecessary restrictions.
           </p>
+
           <p>
             Built to solve real problems: sending large amounts, avoiding banking
             issues, and finding reliable exchange partners in one secure place.
           </p>
+
           <p className="hero-small">
             Always verify before exchanging. This platform connects users, and users
             remain responsible for their transactions.
@@ -387,6 +394,23 @@ export default function HomePage() {
         )}
 
         <div className="card">
+          <h2 className="card-title">Choose exchange type</h2>
+          <p className="card-subtitle">
+            Choose how you want to exchange money with Rafiki.
+          </p>
+
+          <div className="stack top-space">
+            <Link href="/market" className="btn btn-outline" style={{ textAlign: "center" }}>
+              Find Traders (P2P)
+            </Link>
+
+            <Link href="/express" className="btn btn-success" style={{ textAlign: "center" }}>
+              ⚡ Express Exchange
+            </Link>
+          </div>
+        </div>
+
+        <div className="card">
           <h2 className="card-title">How it works</h2>
           <div className="section-grid">
             <div className="info-card">
@@ -407,8 +431,9 @@ export default function HomePage() {
         </div>
 
         {!user && (
-          <div className="card" id="buy-credits">
-            <h2 className="card-title">Welcome to P2P FX</h2>
+          {!user && (
+  <div className="card">
+            <h2 className="card-title">Welcome to Rafiki</h2>
             <p className="card-subtitle">
               Log in or create your account to manage your profile, unlock trader
               contacts, and complete secure transactions.
@@ -493,7 +518,7 @@ export default function HomePage() {
           </div>
         )}
 
-        <div className="card">
+        <div className="card" id="buy-credits">
           <h2 className="card-title">Unlock Seller Contacts</h2>
           <p className="card-subtitle">
             Access verified trader contact details instantly. Choose a credit pack
