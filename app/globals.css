@@ -1213,3 +1213,239 @@ select,
 .nav a.active svg {
   color: #f0b90b;
 }
+:root {
+  --bg-main: #0b1220;
+  --bg-surface: #0f172a;
+  --bg-surface-2: #111c33;
+  --bg-soft: #162235;
+
+  --border-soft: #22314a;
+  --border-strong: #2b3d59;
+
+  --text-main: #e2e8f0;
+  --text-soft: #94a3b8;
+  --text-muted: #64748b;
+  --text-strong: #f8fafc;
+
+  --brand-gold: #f59e0b;
+  --brand-gold-soft: #fbbf24;
+
+  --buy-main: #22c55e;
+  --buy-hover: #16a34a;
+
+  --sell-main: #ef4444;
+  --sell-hover: #dc2626;
+
+  --link-blue: #3b82f6;
+}
+
+body,
+.page {
+  background: var(--bg-main);
+  color: var(--text-main);
+}
+
+.card,
+.hero-card,
+.market-header-card,
+.market-section-card,
+.market-notice-card,
+.market-offer-card,
+.market-modal,
+.info-card,
+.stat-box,
+.nav {
+  background: var(--bg-surface);
+  color: var(--text-main);
+  border: 1px solid var(--border-soft);
+}
+
+.card-title,
+.market-section-title,
+.market-modal-title,
+.hero-card h1,
+.stat-box strong,
+.market-rate,
+.market-trader-name {
+  color: var(--text-strong);
+}
+
+.card-subtitle,
+.market-section-subtitle,
+.market-modal-subtitle,
+.hero-card p,
+.info-card p,
+.market-trader-meta,
+.market-detail-label,
+.market-speed,
+.helper-text,
+.stat-label {
+  color: var(--text-soft);
+}
+
+.eyebrow,
+.eyebrow-visible,
+.market-best-match,
+.market-verified-badge,
+.badge,
+.tag {
+  color: var(--brand-gold);
+}
+
+.eyebrow-visible {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.18);
+}
+
+.hero-copy-box {
+  background: linear-gradient(
+    180deg,
+    rgba(34, 197, 94, 0.07),
+    rgba(34, 197, 94, 0.03)
+  );
+  border: 1px solid rgba(34, 197, 94, 0.18);
+}
+
+.market-best-match {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.18);
+}
+
+.market-verified-badge {
+  color: var(--brand-gold);
+}
+
+.input,
+select,
+.market-select,
+.market-input {
+  background: var(--bg-soft);
+  color: var(--text-main);
+  border: 1px solid var(--border-soft);
+}
+
+.input::placeholder,
+.market-input::placeholder {
+  color: var(--text-muted);
+}
+
+.btn-primary {
+  background: var(--link-blue);
+  color: white;
+  border: 1px solid var(--link-blue);
+}
+
+.btn-primary:hover {
+  background: #2563eb;
+}
+
+.btn-success,
+.market-action-btn.buy {
+  background: var(--buy-main);
+  color: #f0fdf4;
+  border: 1px solid var(--buy-main);
+}
+
+.btn-success:hover,
+.market-action-btn.buy:hover {
+  background: var(--buy-hover);
+  border-color: var(--buy-hover);
+}
+
+.market-action-btn.sell,
+.btn-sell {
+  background: var(--sell-main);
+  color: #fff5f5;
+  border: 1px solid var(--sell-main);
+}
+
+.market-action-btn.sell:hover,
+.btn-sell:hover {
+  background: var(--sell-hover);
+  border-color: var(--sell-hover);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--text-main);
+  border: 1px solid var(--border-strong);
+}
+
+.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.btn-dark {
+  background: var(--bg-soft);
+  color: var(--text-main);
+  border: 1px solid var(--border-soft);
+}
+
+.nav {
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid var(--border-soft);
+}
+
+.nav a {
+  color: var(--text-soft);
+}
+
+.nav a.active {
+  background: #1a2436;
+  color: var(--brand-gold);
+  border: 1px solid var(--border-strong);
+}
+
+.nav a.active svg {
+  color: var(--brand-gold);
+}
+
+.nav a:not(.active):hover {
+  color: var(--text-main);
+}
+
+a {
+  color: inherit;
+}
+
+.market-currency-pill {
+  color: var(--text-strong);
+  border: 1px solid var(--border-strong);
+  background: transparent;
+}
+
+.market-side-switch {
+  background: #1a2436;
+}
+
+.market-switch-btn {
+  color: var(--text-soft);
+}
+
+.market-switch-btn.active {
+  background: #eef2f7;
+  color: #0f172a;
+}
+
+.market-credit-box {
+  background: var(--bg-soft);
+  border: 1px solid var(--border-soft);
+  color: var(--text-main);
+}
+
+.market-avatar {
+  background: #dbe2ea;
+  color: #334155;
+}
+
+.market-detail-value {
+  color: var(--text-strong);
+}
+
+.market-detail-value.muted {
+  color: var(--text-soft);
+}
+
+.empty-state {
+  color: var(--text-soft);
+}
