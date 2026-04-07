@@ -191,7 +191,7 @@ export default function HomePage() {
 
   const startCheckout = async (amount: number) => {
     if (!user) {
-      setMessage("Please log in to purchase credits and unlock trader contacts.");
+      setMessage("Please log in first to purchase credits.");
       setMessageType("warn");
       return;
     }
@@ -332,18 +332,15 @@ export default function HomePage() {
           <div className="eyebrow eyebrow-visible">Tanzania ↔ UK Exchange Network</div>
           <h1>Rafiki</h1>
           <p className="hero-slogan">Exchange with Rafiki</p>
-
           <p>
             A trusted peer-to-peer platform connecting people who need to exchange
             money between Tanzania and the UK — without bank limits, delays, or
             unnecessary restrictions.
           </p>
-
           <p>
             Built to solve real problems: sending large amounts, avoiding banking
             issues, and finding reliable exchange partners in one secure place.
           </p>
-
           <p className="hero-small">
             Always verify before exchanging. This platform connects users, and users
             remain responsible for their transactions.
@@ -431,8 +428,7 @@ export default function HomePage() {
         </div>
 
         {!user && (
-          {!user && (
-  <div className="card">
+          <div className="card">
             <h2 className="card-title">Welcome to Rafiki</h2>
             <p className="card-subtitle">
               Log in or create your account to manage your profile, unlock trader
