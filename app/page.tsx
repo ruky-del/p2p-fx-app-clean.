@@ -326,7 +326,8 @@ export default function HomePage() {
       <div className="container">
         <div className="hero-card">
           <div className="eyebrow eyebrow-visible">Tanzania ↔ UK Exchange Network</div>
-          <h1>P2P FX Marketplace</h1>
+         <h1>Rafiki</h1>
+<p className="hero-slogan">Exchange with Rafiki</p>
           <p>
             A trusted peer-to-peer platform connecting people who need to exchange
             money between Tanzania and the UK — without bank limits, delays, or
