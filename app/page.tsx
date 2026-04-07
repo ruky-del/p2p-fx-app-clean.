@@ -55,7 +55,6 @@ export default function HomePage() {
 
   const syncCurrentUser = async () => {
     try {
-      setLoadingUser(true);
 
       const {
         data: { session },
@@ -321,18 +320,7 @@ export default function HomePage() {
     setMessageType("info");
   };
 
-  if (loadingUser) {
-  return (
-    <main className="page">
-      <div className="container">
-        <div className="card">
-          <h2 className="card-title">Loading...</h2>
-          <p className="card-subtitle">Please wait a moment.</p>
-        </div>
-      </div>
-    </main>
-  );
-}
+  
   return (
     <main className="page">
       <div className="container">
