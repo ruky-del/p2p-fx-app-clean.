@@ -1,3 +1,4 @@
+import { FiHome, FiTrendingUp, FiUser } from "react-icons/fi";
 "use client";
 
 import Link from "next/link";
@@ -615,14 +616,21 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="nav">
-          <Link href="/" className="active">
-            Home
-          </Link>
-          <Link href="/market">Market</Link>
-          <Link href="/profile">Profile</Link>
-        </div>
-      </div>
-    </main>
-  );
-}
+        import { FiHome, FiTrendingUp, FiUser } from "react-icons/fi";
+
+<div className="nav">
+  <Link href="/" className="active">
+    <FiHome />
+    <span>Home</span>
+  </Link>
+
+  <Link href="/market">
+    <FiTrendingUp />
+    <span>Market</span>
+  </Link>
+
+  <Link href="/profile">
+    <FiUser />
+    <span>Profile</span>
+  </Link>
+</div>
