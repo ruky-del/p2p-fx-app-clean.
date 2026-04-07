@@ -1,0 +1,147 @@
+"use client";
+
+import Link from "next/link";
+import { useMemo, useState } from "react";
+
+export default function ExpressPage() {
+  const [mode, setMode] = useState<"gbp-to-tzs" | "tzs-to-gbp">("gbp-to-tzs");
+  const [amount, setAmount] = useState("");
+
+  const gbpToTzsRate = 3120;
+  const tzsToGbpRate = 3120;
+
+  const numericAmount = Number(amount) || 0;
+
+  const result = useMemo(() => {
+    if (!numericAmount) return 0;
+
+    if (mode === "gbp-to-tzs") {
+      return numericAmount * gbpToTzsRate;
+    }
+
+    return numericAmount / tzsToGbpRate;
+  }, [numericAmount, mode]);
+
+  const sendCurrency = mode === "gbp-to-tzs" ? "GBP" : "TZS";
+  const receiveCurrency = mode === "gbp-to-tzs" ? "TZS" : "GBP";
+
+  const formattedResult =
+    receiveCurrency === "TZS"
+      ? `${Math.round(result).toLocaleString()} TZS`
+      : `£${result.toFixed(2)}`;
+
+  return (
+    <main className="page">
+      <div className="container">
+        <div className="card">
+          <div className="eyebrow eyebrow-visible">Rafiki Express</div>
+          <h1 style={{ marginTop: "10px", fontSize: "2.2rem", color: "#f8fafc" }}>
+            Express Exchange
+          </h1>
+          <p className="card-subtitle">
+            Exchange directly with Rafiki for a faster, simpler and more controlled
+            experience.
+          </p>
+        </div>
+
+        <div className="card">
+          <h2 className="card-title">Choose direction</h2>
+
+          <div className="stack top-space" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <button
+              className={mode === "gbp-to-tzs" ? "btn btn-success" : "btn btn-outline"}
+              onClick={() => setMode("gbp-to-tzs")}
+            >
+              GBP → TZS
+            </button>
+
+            <button
+              className={mode === "tzs-to-gbp" ? "btn btn-success" : "btn btn-outline"}
+              onClick={() => setMode("tzs-to-gbp")}
+            >
+              TZS → GBP
+            </button>
+          </div>
+        </div>
+
+        <div className="card">
+          <h2 className="card-title">Enter amount</h2>
+
+          <div className="form-stack top-space">
+            <label className="input-label">
+              You send ({sendCurrency})
+              <input
+                className="input"
+                type="number"
+                placeholder={`Enter amount in ${sendCurrency}`}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </label>
+
+            <div className="info-card">
+              <h3>Current rate</h3>
+              <p>
+                {mode === "gbp-to-tzs"
+                  ? `£1 = ${gbpToTzsRate.toLocaleString()} TZS`
+                  : `£1 = ${tzsToGbpRate.toLocaleString()} TZS`}
+              </p>
+            </div>
+
+            <div className="info-card">
+              <h3>You receive</h3>
+              <p style={{ fontSize: "1.4rem", fontWeight: 800, color: "#f8fafc" }}>
+                {formattedResult}
+              </p>
+            </div>
+
+            <button className="btn btn-success">
+              Continue Express Exchange
+            </button>
+          </div>
+        </div>
+
+        <div className="card">
+          <h2 className="card-title">How Express works</h2>
+
+          <div className="section-grid">
+            <div className="info-card">
+              <h3>1. Enter your amount</h3>
+              <p>Choose how much you want to exchange and review the current rate.</p>
+            </div>
+
+            <div className="info-card">
+              <h3>2. Pay Rafiki</h3>
+              <p>
+                You will receive direct payment instructions for the selected currency
+                and country.
+              </p>
+            </div>
+
+            <div className="info-card">
+              <h3>3. We send your exchange</h3>
+              <p>
+                After payment is confirmed, Rafiki sends the converted amount to your
+                destination account.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <h2 className="card-title">Important notice</h2>
+          <p className="card-subtitle">
+            Express Exchange is a direct exchange service with Rafiki. Rates may be
+            updated based on market conditions, banking costs and transfer timing.
+          </p>
+        </div>
+
+        <div className="nav">
+          <Link href="/">Home</Link>
+          <Link href="/market">Market</Link>
+          <Link href="/profile">Profile</Link>
+        </div>
+      </div>
+    </main>
+  );
+}
