@@ -1,146 +1,135 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { FiHome, FiTrendingUp, FiUser } from "react-icons/fi";
 
 export default function ExpressPage() {
-  const [mode, setMode] = useState<"gbp-to-tzs" | "tzs-to-gbp">("gbp-to-tzs");
-  const [amount, setAmount] = useState("");
+  const [sendCurrency, setSendCurrency] = useState("GBP");
+  const [receiveCurrency, setReceiveCurrency] = useState("TZS");
+  const [sendAmount, setSendAmount] = useState("1000");
 
-  const gbpToTzsRate = 3120;
-  const tzsToGbpRate = 3120;
+  const estimatedReceive =
+    sendCurrency === "GBP" && receiveCurrency === "TZS"
+      ? (Number(sendAmount) || 0) * 3120
+      : sendCurrency === "TZS" && receiveCurrency === "GBP"
+      ? (Number(sendAmount) || 0) / 3120
+      : Number(sendAmount) || 0;
 
-  const numericAmount = Number(amount) || 0;
+  const switchCurrencies = () => {
+    setSendCurrency(receiveCurrency);
+    setReceiveCurrency(sendCurrency);
+  };
 
-  const result = useMemo(() => {
-    if (!numericAmount) return 0;
-
-    if (mode === "gbp-to-tzs") {
-      return numericAmount * gbpToTzsRate;
+  const formatValue = (value: number, currency: string) => {
+    if (currency === "GBP") {
+      return `£${value.toLocaleString()}`;
     }
-
-    return numericAmount / tzsToGbpRate;
-  }, [numericAmount, mode]);
-
-  const sendCurrency = mode === "gbp-to-tzs" ? "GBP" : "TZS";
-  const receiveCurrency = mode === "gbp-to-tzs" ? "TZS" : "GBP";
-
-  const formattedResult =
-    receiveCurrency === "TZS"
-      ? `${Math.round(result).toLocaleString()} TZS`
-      : `£${result.toFixed(2)}`;
+    return `${value.toLocaleString()} TZS`;
+  };
 
   return (
     <main className="page">
       <div className="container">
+
+        {/* HEADER */}
+        <div className="market-header-card">
+          <div className="market-topbar">
+            <Link href="/" className="market-back">←</Link>
+
+            <div className="market-tabs">
+              <button className="market-tab market-tab-active">Express</button>
+              <Link href="/market" className="market-tab">P2P</Link>
+            </div>
+
+            <div className="market-currency-pill">{sendCurrency}</div>
+          </div>
+
+          <h1 className="market-section-title">Express Exchange</h1>
+          <p className="market-section-subtitle">
+            Quick estimate between Tanzania and UK
+          </p>
+
+          <div className="market-filter-row">
+            <select
+              className="market-select"
+              value={sendCurrency}
+              onChange={(e) => setSendCurrency(e.target.value)}
+            >
+              <option value="GBP">GBP</option>
+              <option value="TZS">TZS</option>
+            </select>
+
+            <select
+              className="market-select"
+              value={receiveCurrency}
+              onChange={(e) => setReceiveCurrency(e.target.value)}
+            >
+              <option value="TZS">TZS</option>
+              <option value="GBP">GBP</option>
+            </select>
+
+            <input
+              className="market-input"
+              type="number"
+              placeholder="Amount"
+              value={sendAmount}
+              onChange={(e) => setSendAmount(e.target.value)}
+            />
+
+            <button className="btn btn-outline" onClick={switchCurrencies}>
+              Swap
+            </button>
+          </div>
+        </div>
+
+        {/* RESULT */}
+        <div className="market-section-card">
+          <h2 className="market-section-title">Estimate</h2>
+
+          <div className="market-offer-card">
+            <div className="market-offer-left">
+
+              <div className="market-detail-line">
+                <span>You send</span>
+                <strong>{formatValue(Number(sendAmount), sendCurrency)}</strong>
+              </div>
+
+              <div className="market-detail-line">
+                <span>You receive</span>
+                <strong>{formatValue(estimatedReceive, receiveCurrency)}</strong>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        {/* INFO */}
         <div className="card">
-          <div className="eyebrow eyebrow-visible">Rafiki Express</div>
-          <h1 style={{ marginTop: "10px", fontSize: "2.2rem", color: "#f8fafc" }}>
-            Express Exchange
-          </h1>
+          <h2 className="card-title">Important</h2>
           <p className="card-subtitle">
-            Exchange directly with Rafiki for a faster, simpler and more controlled
-            experience.
+            This is only an estimate. Final exchange happens via P2P traders.
           </p>
         </div>
 
-        <div className="card">
-          <h2 className="card-title">Choose direction</h2>
-
-          <div className="stack top-space" style={{ gridTemplateColumns: "1fr 1fr" }}>
-            <button
-              className={mode === "gbp-to-tzs" ? "btn btn-success" : "btn btn-outline"}
-              onClick={() => setMode("gbp-to-tzs")}
-            >
-              GBP → TZS
-            </button>
-
-            <button
-              className={mode === "tzs-to-gbp" ? "btn btn-success" : "btn btn-outline"}
-              onClick={() => setMode("tzs-to-gbp")}
-            >
-              TZS → GBP
-            </button>
-          </div>
-        </div>
-
-        <div className="card">
-          <h2 className="card-title">Enter amount</h2>
-
-          <div className="form-stack top-space">
-            <label className="input-label">
-              You send ({sendCurrency})
-              <input
-                className="input"
-                type="number"
-                placeholder={`Enter amount in ${sendCurrency}`}
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
-            </label>
-
-            <div className="info-card">
-              <h3>Current rate</h3>
-              <p>
-                {mode === "gbp-to-tzs"
-                  ? `£1 = ${gbpToTzsRate.toLocaleString()} TZS`
-                  : `£1 = ${tzsToGbpRate.toLocaleString()} TZS`}
-              </p>
-            </div>
-
-            <div className="info-card">
-              <h3>You receive</h3>
-              <p style={{ fontSize: "1.4rem", fontWeight: 800, color: "#f8fafc" }}>
-                {formattedResult}
-              </p>
-            </div>
-
-            <button className="btn btn-success">
-              Continue Express Exchange
-            </button>
-          </div>
-        </div>
-
-        <div className="card">
-          <h2 className="card-title">How Express works</h2>
-
-          <div className="section-grid">
-            <div className="info-card">
-              <h3>1. Enter your amount</h3>
-              <p>Choose how much you want to exchange and review the current rate.</p>
-            </div>
-
-            <div className="info-card">
-              <h3>2. Pay Rafiki</h3>
-              <p>
-                You will receive direct payment instructions for the selected currency
-                and country.
-              </p>
-            </div>
-
-            <div className="info-card">
-              <h3>3. We send your exchange</h3>
-              <p>
-                After payment is confirmed, Rafiki sends the converted amount to your
-                destination account.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <h2 className="card-title">Important notice</h2>
-          <p className="card-subtitle">
-            Express Exchange is a direct exchange service with Rafiki. Rates may be
-            updated based on market conditions, banking costs and transfer timing.
-          </p>
-        </div>
-
+        {/* NAV */}
         <div className="nav">
-          <Link href="/">Home</Link>
-          <Link href="/market">Market</Link>
-          <Link href="/profile">Profile</Link>
+          <Link href="/">
+            <FiHome />
+            <span>Home</span>
+          </Link>
+
+          <Link href="/market">
+            <FiTrendingUp />
+            <span>Market</span>
+          </Link>
+
+          <Link href="/profile">
+            <FiUser />
+            <span>Profile</span>
+          </Link>
         </div>
+
       </div>
     </main>
   );
