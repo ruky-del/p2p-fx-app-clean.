@@ -54,7 +54,7 @@ export default function HomePage() {
           {/* LOGO */}
           <div style={{ marginBottom: "10px" }}>
             <Image
-              src="/logo.png"
+              src="/logo-clean.png"
               alt="Rafiki Exchange"
               width={160}
               height={50}
