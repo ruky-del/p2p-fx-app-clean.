@@ -93,7 +93,14 @@ export default function HomePage() {
       setMessage("Payment successful. Your credits have been added to your account.");
       setMessageType("success");
     }
-
+if (params.get("login") === "1") {
+  setTimeout(() => {
+    const section = document.getElementById("login-section");
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, 400);
+}
     if (params.get("canceled") === "true") {
       setMessage("Payment was cancelled. You can try again any time.");
       setMessageType("warn");
@@ -432,7 +439,7 @@ export default function HomePage() {
         </div>
 
         {!user && (
-          <div className="card">
+  <div className="card" id="login-section">
             <h2 className="card-title">Welcome to Rafiki</h2>
             <p className="card-subtitle">
               Log in or create your account to manage your profile, unlock trader

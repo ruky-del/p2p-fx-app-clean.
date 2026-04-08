@@ -194,7 +194,14 @@ export default function MarketPage() {
               </button>
             </div>
 
-            <div className="market-currency-pill">{currency}</div>
+            <select
+  className="market-currency-pill market-currency-select"
+  value={currency}
+  onChange={(e) => setCurrency(e.target.value)}
+>
+  <option value="GBP">GBP</option>
+  <option value="TZS">TZS</option>
+</select>
           </div>
 
           <div className="market-side-switch">
@@ -233,17 +240,18 @@ export default function MarketPage() {
               onChange={(e) => setAmount(e.target.value)}
             />
 
-            <select
-              className="market-select"
-              value={area}
-              onChange={(e) => setArea(e.target.value)}
-            >
-              <option value="All">All areas</option>
-              <option value="London">London</option>
-              <option value="Dar es Salaam">Dar es Salaam</option>
-              <option value="Birmingham">Birmingham</option>
-              <option value="Mwanza">Mwanza</option>
-            </select>
+            <option value="All">All areas</option>
+<option value="London">London</option>
+<option value="Dar es Salaam">Dar es Salaam</option>
+<option value="Birmingham">Birmingham</option>
+<option value="Mwanza">Mwanza</option>
+<option value="Manchester">Manchester</option>
+<option value="Leicester">Leicester</option>
+<option value="Liverpool">Liverpool</option>
+<option value="Nairobi">Nairobi</option>
+<option value="Arusha">Arusha</option>
+<option value="Zanzibar">Zanzibar</option>
+<option value="Dodoma">Dodoma</option>
 
             <select
               className="market-select"
@@ -454,13 +462,13 @@ export default function MarketPage() {
               </button>
 
               <Link
-                href="/"
-                className="btn btn-primary"
-                style={{ textAlign: "center" }}
-                onClick={() => setShowCreditNotice(false)}
-              >
-                Go to Login
-              </Link>
+  href="/?login=1"
+  className="btn btn-primary"
+  style={{ textAlign: "center" }}
+  onClick={() => setShowCreditNotice(false)}
+>
+  Go to Login
+</Link>
             </div>
           </div>
         </div>
