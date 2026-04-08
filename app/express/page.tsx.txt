@@ -9,6 +9,13 @@ export default function ExpressPage() {
   const [receiveCurrency, setReceiveCurrency] = useState("TZS");
   const [sendAmount, setSendAmount] = useState("1000");
 
+  const rate =
+    sendCurrency === "GBP" && receiveCurrency === "TZS"
+      ? 3120
+      : sendCurrency === "TZS" && receiveCurrency === "GBP"
+      ? 1 / 3120
+      : 1;
+
   const estimatedReceive =
     sendCurrency === "GBP" && receiveCurrency === "TZS"
       ? (Number(sendAmount) || 0) * 3120
@@ -21,38 +28,21 @@ export default function ExpressPage() {
     setReceiveCurrency(sendCurrency);
   };
 
-  const formatValue = (value: number, currency: string) => {
-    if (currency === "GBP") {
-      return `£${value.toLocaleString()}`;
-    }
-    return `${value.toLocaleString()} TZS`;
-  };
-
   return (
     <main className="page">
       <div className="container">
 
         {/* HEADER */}
-        <div className="market-header-card">
-          <div className="market-topbar">
-            <Link href="/" className="market-back">←</Link>
-
-            <div className="market-tabs">
-              <button className="market-tab market-tab-active">Express</button>
-              <Link href="/market" className="market-tab">P2P</Link>
-            </div>
-
-            <div className="market-currency-pill">{sendCurrency}</div>
-          </div>
-
-          <h1 className="market-section-title">Express Exchange</h1>
-          <p className="market-section-subtitle">
-            Quick estimate between Tanzania and UK
+        <div className="card">
+          <h1 className="card-title">⚡ Express Exchange</h1>
+          <p className="card-subtitle">
+            Quick estimate for direct exchange between Tanzania and the UK.
           </p>
 
-          <div className="market-filter-row">
+          <div className="stack top-space">
+
             <select
-              className="market-select"
+              className="input"
               value={sendCurrency}
               onChange={(e) => setSendCurrency(e.target.value)}
             >
@@ -61,7 +51,7 @@ export default function ExpressPage() {
             </select>
 
             <select
-              className="market-select"
+              className="input"
               value={receiveCurrency}
               onChange={(e) => setReceiveCurrency(e.target.value)}
             >
@@ -70,11 +60,11 @@ export default function ExpressPage() {
             </select>
 
             <input
-              className="market-input"
+              className="input"
               type="number"
-              placeholder="Amount"
               value={sendAmount}
               onChange={(e) => setSendAmount(e.target.value)}
+              placeholder="Amount"
             />
 
             <button className="btn btn-outline" onClick={switchCurrencies}>
@@ -84,32 +74,19 @@ export default function ExpressPage() {
         </div>
 
         {/* RESULT */}
-        <div className="market-section-card">
-          <h2 className="market-section-title">Estimate</h2>
-
-          <div className="market-offer-card">
-            <div className="market-offer-left">
-
-              <div className="market-detail-line">
-                <span>You send</span>
-                <strong>{formatValue(Number(sendAmount), sendCurrency)}</strong>
-              </div>
-
-              <div className="market-detail-line">
-                <span>You receive</span>
-                <strong>{formatValue(estimatedReceive, receiveCurrency)}</strong>
-              </div>
-
-            </div>
-          </div>
-        </div>
-
-        {/* INFO */}
         <div className="card">
-          <h2 className="card-title">Important</h2>
+          <h2 className="card-title">Estimate</h2>
+
           <p className="card-subtitle">
-            This is only an estimate. Final exchange happens via P2P traders.
+            Rate: {sendCurrency} → {receiveCurrency}
           </p>
+
+          <div style={{ marginTop: "16px", fontSize: "20px", fontWeight: "600" }}>
+            You receive:{" "}
+            {sendCurrency === "GBP"
+              ? `${estimatedReceive.toLocaleString()} TZS`
+              : `£${estimatedReceive.toFixed(2)}`}
+          </div>
         </div>
 
         {/* NAV */}
