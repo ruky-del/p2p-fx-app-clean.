@@ -1,8 +1,8 @@
-import { FiHome, FiTrendingUp, FiUser } from "react-icons/fi";
 "use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { FiHome, FiTrendingUp, FiUser } from "react-icons/fi";
 import { supabase } from "@/lib/supabase";
 
 type UserProfile = {
@@ -333,19 +333,22 @@ export default function HomePage() {
           <div className="eyebrow eyebrow-visible">Tanzania ↔ UK Exchange Network</div>
           <h1>Rafiki</h1>
           <p className="hero-slogan">Exchange with Rafiki</p>
-          <p>
-            A trusted peer-to-peer platform connecting people who need to exchange
-            money between Tanzania and the UK — without bank limits, delays, or
-            unnecessary restrictions.
-          </p>
-          <p>
-            Built to solve real problems: sending large amounts, avoiding banking
-            issues, and finding reliable exchange partners in one secure place.
-          </p>
-          <p className="hero-small">
-            Always verify before exchanging. This platform connects users, and users
-            remain responsible for their transactions.
-          </p>
+
+          <div className="hero-copy-box">
+            <p>
+              A trusted peer-to-peer platform connecting people who need to exchange
+              money between Tanzania and the UK — without bank limits, delays, or
+              unnecessary restrictions.
+            </p>
+            <p>
+              Built to solve real problems: sending large amounts, avoiding banking
+              issues, and finding reliable exchange partners in one secure place.
+            </p>
+            <p className="hero-small">
+              Always verify before exchanging. This platform connects users, and users
+              remain responsible for their transactions.
+            </p>
+          </div>
 
           <div className="stats-grid">
             <Link href="/market" className="stat-box">
@@ -616,21 +619,23 @@ export default function HomePage() {
           </p>
         </div>
 
-        import { FiHome, FiTrendingUp, FiUser } from "react-icons/fi";
+        <div className="nav">
+          <Link href="/" className="active">
+            <FiHome />
+            <span>Home</span>
+          </Link>
 
-<div className="nav">
-  <Link href="/" className="active">
-    <FiHome />
-    <span>Home</span>
-  </Link>
+          <Link href="/market">
+            <FiTrendingUp />
+            <span>Market</span>
+          </Link>
 
-  <Link href="/market">
-    <FiTrendingUp />
-    <span>Market</span>
-  </Link>
-
-  <Link href="/profile">
-    <FiUser />
-    <span>Profile</span>
-  </Link>
-</div>
+          <Link href="/profile">
+            <FiUser />
+            <span>Profile</span>
+          </Link>
+        </div>
+      </div>
+    </main>
+  );
+}

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { FiHome, FiTrendingUp, FiUser } from "react-icons/fi";
 import { supabase } from "@/lib/supabase";
 
 const offersData = [
@@ -116,7 +117,7 @@ export default function MarketPage() {
   const numericAmount = Number(amount) || 0;
 
   const filteredOffers = useMemo(() => {
-    let base = offersData.filter((offer) => {
+    const base = offersData.filter((offer) => {
       const sideMatch = offer.side === side;
       const currencyMatch = offer.fromCurrency === currency;
       const areaMatch = area === "All" || offer.area === area;
@@ -185,9 +186,12 @@ export default function MarketPage() {
             </Link>
 
             <div className="market-tabs">
-              <button className="market-tab">Express</button>
-              <button className="market-tab market-tab-active">P2P</button>
-              <button className="market-tab">Block Trade</button>
+              <Link href="/express" className="market-tab">
+                Express
+              </Link>
+              <button className="market-tab market-tab-active" type="button">
+                P2P
+              </button>
             </div>
 
             <div className="market-currency-pill">{currency}</div>
@@ -197,6 +201,7 @@ export default function MarketPage() {
             <button
               className={side === "buy" ? "market-switch-btn active buy" : "market-switch-btn"}
               onClick={() => setSide("buy")}
+              type="button"
             >
               Buy
             </button>
@@ -204,6 +209,7 @@ export default function MarketPage() {
             <button
               className={side === "sell" ? "market-switch-btn active sell" : "market-switch-btn"}
               onClick={() => setSide("sell")}
+              type="button"
             >
               Sell
             </button>
@@ -310,7 +316,17 @@ export default function MarketPage() {
                         </div>
                       </div>
 
-                      <div className="market-rate">{renderRate(offer)}</div>
+                      <div
+                        className="market-rate"
+                        style={{
+                          fontSize: "2.2rem",
+                          lineHeight: 1.1,
+                          marginTop: "18px",
+                          marginBottom: "14px",
+                        }}
+                      >
+                        {renderRate(offer)}
+                      </div>
 
                       <div className="market-detail-line">
                         <span className="market-detail-label">Available</span>
@@ -337,6 +353,7 @@ export default function MarketPage() {
                       <button
                         className={buttonClass}
                         onClick={() => setSelectedOffer(offer)}
+                        type="button"
                       >
                         {actionLabel}
                       </button>
@@ -358,11 +375,20 @@ export default function MarketPage() {
         </div>
 
         <div className="nav">
-          <Link href="/">Home</Link>
-          <Link href="/market" className="active">
-            Market
+          <Link href="/">
+            <FiHome />
+            <span>Home</span>
           </Link>
-          <Link href="/profile">Profile</Link>
+
+          <Link href="/market" className="active">
+            <FiTrendingUp />
+            <span>Market</span>
+          </Link>
+
+          <Link href="/profile">
+            <FiUser />
+            <span>Profile</span>
+          </Link>
         </div>
       </div>
 
@@ -398,11 +424,11 @@ export default function MarketPage() {
             </div>
 
             <div className="market-modal-actions">
-              <button className="btn btn-outline" onClick={() => setSelectedOffer(null)}>
+              <button className="btn btn-outline" onClick={() => setSelectedOffer(null)} type="button">
                 Close
               </button>
 
-              <button className="market-action-btn buy" onClick={handleNeedCredits}>
+              <button className="market-action-btn buy" onClick={handleNeedCredits} type="button">
                 Buy Credits
               </button>
             </div>
@@ -422,6 +448,7 @@ export default function MarketPage() {
               <button
                 className="btn btn-outline"
                 onClick={() => setShowCreditNotice(false)}
+                type="button"
               >
                 Close
               </button>
