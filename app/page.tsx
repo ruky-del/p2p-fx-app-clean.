@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { FiHome, FiTrendingUp, FiUser } from "react-icons/fi";
 import { supabase } from "@/lib/supabase";
-import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 
 type UserProfile = {
