@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FiHome, FiTrendingUp, FiUser } from "react-icons/fi";
 import { supabase } from "@/lib/supabase";
+import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 
 type UserProfile = {
   id: string;
@@ -14,6 +16,16 @@ type UserProfile = {
 };
 
 export default function HomePage() {
+const searchParams = useSearchParams();
+
+useEffect(() => {
+  if (searchParams.get("login")) {
+    const el = document.getElementById("login-section");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
+    }
+  }
+}, [searchParams]);
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
@@ -440,7 +452,7 @@ if (params.get("login") === "1") {
 
         {!user && (
   <div className="card" id="login-section">
-            <h2 className="card-title">Welcome to Rafiki</h2>
+  <h2 className="card-title">Welcome to Rafiki</h2>
             <p className="card-subtitle">
               Log in or create your account to manage your profile, unlock trader
               contacts, and complete secure transactions.
