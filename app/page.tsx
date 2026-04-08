@@ -1,11 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { FiHome, FiTrendingUp, FiUser } from "react-icons/fi";
 import { supabase } from "@/lib/supabase";
-import { useSearchParams } from "next/navigation";
 
 type UserProfile = {
   id: string;
@@ -16,16 +14,6 @@ type UserProfile = {
 };
 
 export default function HomePage() {
-const searchParams = useSearchParams();
-
-useEffect(() => {
-  if (searchParams.get("login")) {
-    const el = document.getElementById("login-section");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
-    }
-  }
-}, [searchParams]);
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
@@ -105,17 +93,19 @@ useEffect(() => {
       setMessage("Payment successful. Your credits have been added to your account.");
       setMessageType("success");
     }
-if (params.get("login") === "1") {
-  setTimeout(() => {
-    const section = document.getElementById("login-section");
-    if (section) {
-      section.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, 400);
-}
+
     if (params.get("canceled") === "true") {
       setMessage("Payment was cancelled. You can try again any time.");
       setMessageType("warn");
+    }
+
+    if (params.get("login") === "1") {
+      setTimeout(() => {
+        const section = document.getElementById("login-section");
+        if (section) {
+          section.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 400);
     }
 
     if (params.get("buyCredits") === "1") {
@@ -350,14 +340,15 @@ if (params.get("login") === "1") {
       <div className="container">
         <div className="hero-card">
           <div className="eyebrow eyebrow-visible">Tanzania ↔ UK Exchange Network</div>
-       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-  <div style={{ marginBottom: "12px" }}>
-  <img
-    src="/logo.png"
-    alt="Rafiki Exchange"
-    style={{ width: "220px", height: "auto", display: "block" }}
-  />
-</div>
+
+          <div style={{ marginBottom: "12px" }}>
+            <img
+              src="/logo.png"
+              alt="Rafiki Exchange"
+              style={{ width: "220px", height: "auto", display: "block" }}
+            />
+          </div>
+
           <p className="hero-slogan">Exchange with Rafiki</p>
 
           <div className="hero-copy-box">
@@ -458,8 +449,8 @@ if (params.get("login") === "1") {
         </div>
 
         {!user && (
-  <div className="card" id="login-section">
-  <h2 className="card-title">Welcome to Rafiki</h2>
+          <div className="card" id="login-section">
+            <h2 className="card-title">Welcome to Rafiki</h2>
             <p className="card-subtitle">
               Log in or create your account to manage your profile, unlock trader
               contacts, and complete secure transactions.
@@ -495,6 +486,7 @@ if (params.get("login") === "1") {
                   className="btn btn-primary"
                   onClick={handleSendCode}
                   disabled={authLoading || cooldown > 0}
+                  type="button"
                 >
                   {authLoading
                     ? "Sending code..."
@@ -508,6 +500,7 @@ if (params.get("login") === "1") {
                     className="btn btn-primary"
                     onClick={handleVerifyCode}
                     disabled={authLoading}
+                    type="button"
                   >
                     {authLoading ? "Verifying..." : "Verify Code & Login"}
                   </button>
@@ -521,6 +514,7 @@ if (params.get("login") === "1") {
                       setMessageType("info");
                     }}
                     disabled={authLoading}
+                    type="button"
                   >
                     Change Email
                   </button>
@@ -529,6 +523,7 @@ if (params.get("login") === "1") {
                     className="btn btn-outline"
                     onClick={handleSendCode}
                     disabled={authLoading || cooldown > 0}
+                    type="button"
                   >
                     {cooldown > 0 ? `Resend available in ${cooldown}s` : "Resend Code"}
                   </button>
@@ -557,6 +552,7 @@ if (params.get("login") === "1") {
               className="btn btn-success"
               onClick={() => startCheckout(2)}
               disabled={checkoutLoading !== null}
+              type="button"
             >
               {checkoutLoading === 2 ? "Please wait..." : "Buy 1 Credit — £2"}
             </button>
@@ -565,6 +561,7 @@ if (params.get("login") === "1") {
               className="btn btn-success"
               onClick={() => startCheckout(5)}
               disabled={checkoutLoading !== null}
+              type="button"
             >
               {checkoutLoading === 5 ? "Please wait..." : "Buy 3 Credits — £5"}
             </button>
@@ -573,6 +570,7 @@ if (params.get("login") === "1") {
               className="btn btn-success"
               onClick={() => startCheckout(15)}
               disabled={checkoutLoading !== null}
+              type="button"
             >
               {checkoutLoading === 15 ? "Please wait..." : "Buy 10 Credits — £15"}
             </button>
@@ -616,11 +614,12 @@ if (params.get("login") === "1") {
                   className="btn btn-primary"
                   onClick={saveProfile}
                   disabled={savingProfile}
+                  type="button"
                 >
                   {savingProfile ? "Saving..." : "Save Profile"}
                 </button>
 
-                <button className="btn btn-dark" onClick={logout}>
+                <button className="btn btn-dark" onClick={logout} type="button">
                   Logout
                 </button>
               </div>
