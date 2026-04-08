@@ -351,12 +351,12 @@ if (params.get("login") === "1") {
         <div className="hero-card">
           <div className="eyebrow eyebrow-visible">Tanzania ↔ UK Exchange Network</div>
        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+  <div style={{ marginBottom: "12px" }}>
   <img
     src="/logo.png"
     alt="Rafiki Exchange"
-    style={{ width: "180px", height: "auto", display: "block" }}
+    style={{ width: "220px", height: "auto", display: "block" }}
   />
-  <h1 style={{ margin: 0 }}>Rafiki Exchange</h1>
 </div>
           <p className="hero-slogan">Exchange with Rafiki</p>
 
