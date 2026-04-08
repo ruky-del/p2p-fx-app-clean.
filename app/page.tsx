@@ -341,13 +341,9 @@ export default function HomePage() {
         <div className="hero-card">
           <div className="eyebrow eyebrow-visible">Tanzania ↔ UK Exchange Network</div>
 
-          <div style={{ marginBottom: "12px" }}>
-            <img
-              src="/logo.png"
-              alt="Rafiki Exchange"
-              style={{ width: "220px", height: "auto", display: "block" }}
-            />
-          </div>
+          <h1 style={{ margin: "8px 0 10px", fontSize: "2.5rem", lineHeight: 1.05 }}>
+            Rafiki Exchange
+          </h1>
 
           <p className="hero-slogan">Exchange with Rafiki</p>
 

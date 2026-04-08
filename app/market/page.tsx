@@ -172,7 +172,7 @@ export default function MarketPage() {
       return;
     }
 
-    window.location.href = "/#buy-credits";
+    window.location.href = "/?buyCredits=1";
   };
 
   return (
@@ -188,6 +188,7 @@ export default function MarketPage() {
               <Link href="/express" className="market-tab">
                 Express
               </Link>
+
               <button className="market-tab market-tab-active" type="button">
                 P2P
               </button>
