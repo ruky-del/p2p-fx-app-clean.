@@ -1,38 +1,87 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FiHome, FiTrendingUp, FiUser } from "react-icons/fi";
+import { supabase } from "@/lib/supabase";
+
+type RateRow = {
+  pair: string;
+  base_rate: number;
+  rafiki_rate: number;
+};
 
 export default function ExpressPage() {
   const [sendCurrency, setSendCurrency] = useState("GBP");
   const [receiveCurrency, setReceiveCurrency] = useState("TZS");
   const [sendAmount, setSendAmount] = useState("1000");
 
-  const rate =
-    sendCurrency === "GBP" && receiveCurrency === "TZS"
-      ? 3120
-      : sendCurrency === "TZS" && receiveCurrency === "GBP"
-      ? 1 / 3120
-      : 1;
+  const [gbpToTzsRate, setGbpToTzsRate] = useState<number | null>(null);
+  const [tzsToGbpRate, setTzsToGbpRate] = useState<number | null>(null);
+  const [loadingRate, setLoadingRate] = useState(true);
+  const [rateError, setRateError] = useState("");
 
-  const estimatedReceive =
-    sendCurrency === "GBP" && receiveCurrency === "TZS"
-      ? (Number(sendAmount) || 0) * 3120
-      : sendCurrency === "TZS" && receiveCurrency === "GBP"
-      ? (Number(sendAmount) || 0) / 3120
-      : Number(sendAmount) || 0;
+  useEffect(() => {
+    const loadRates = async () => {
+      setLoadingRate(true);
+      setRateError("");
+
+      const { data, error } = await supabase
+        .from("exchange_rates")
+        .select("pair, base_rate, rafiki_rate")
+        .in("pair", ["GBP_TZS", "TZS_GBP"]);
+
+      if (error) {
+        console.error(error);
+        setRateError("Could not load exchange rates.");
+        setLoadingRate(false);
+        return;
+      }
+
+      const rows = (data || []) as RateRow[];
+
+      const gbpTzs = rows.find((row) => row.pair === "GBP_TZS");
+      const tzsGbp = rows.find((row) => row.pair === "TZS_GBP");
+
+      setGbpToTzsRate(gbpTzs?.rafiki_rate ?? null);
+      setTzsToGbpRate(tzsGbp?.rafiki_rate ?? null);
+      setLoadingRate(false);
+    };
+
+    loadRates();
+  }, []);
 
   const switchCurrencies = () => {
     setSendCurrency(receiveCurrency);
     setReceiveCurrency(sendCurrency);
   };
 
+  const activeRate =
+    sendCurrency === "GBP" && receiveCurrency === "TZS"
+      ? gbpToTzsRate
+      : sendCurrency === "TZS" && receiveCurrency === "GBP"
+      ? tzsToGbpRate
+      : 1;
+
+  const estimatedReceive =
+    activeRate === null ? 0 : (Number(sendAmount) || 0) * activeRate;
+
+  const formatValue = (value: number, currency: string) => {
+    if (currency === "GBP") {
+      return `£${value.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+    }
+
+    return `${value.toLocaleString(undefined, {
+      maximumFractionDigits: 0,
+    })} TZS`;
+  };
+
   return (
     <main className="page">
       <div className="container">
-
-        {/* HEADER */}
         <div className="card">
           <h1 className="card-title">⚡ Express Exchange</h1>
           <p className="card-subtitle">
@@ -40,7 +89,6 @@ export default function ExpressPage() {
           </p>
 
           <div className="stack top-space">
-
             <select
               className="input"
               value={sendCurrency}
@@ -67,29 +115,41 @@ export default function ExpressPage() {
               placeholder="Amount"
             />
 
-            <button className="btn btn-outline" onClick={switchCurrencies}>
+            <button className="btn btn-outline" onClick={switchCurrencies} type="button">
               Swap
             </button>
           </div>
         </div>
 
-        {/* RESULT */}
         <div className="card">
           <h2 className="card-title">Estimate</h2>
 
-          <p className="card-subtitle">
-            Rate: {sendCurrency} → {receiveCurrency}
-          </p>
+          {loadingRate ? (
+            <p className="card-subtitle">Loading latest Rafiki rate...</p>
+          ) : rateError ? (
+            <p className="card-subtitle">{rateError}</p>
+          ) : (
+            <>
+              <p className="card-subtitle">
+                Rate: {sendCurrency} → {receiveCurrency}
+              </p>
 
-          <div style={{ marginTop: "16px", fontSize: "20px", fontWeight: "600" }}>
-            You receive:{" "}
-            {sendCurrency === "GBP"
-              ? `${estimatedReceive.toLocaleString()} TZS`
-              : `£${estimatedReceive.toFixed(2)}`}
-          </div>
+              <div style={{ marginTop: "16px", fontSize: "20px", fontWeight: 600 }}>
+                You receive: {formatValue(estimatedReceive, receiveCurrency)}
+              </div>
+
+              <div style={{ marginTop: "10px", opacity: 0.8 }}>
+                Rafiki rate:{" "}
+                {activeRate !== null
+                  ? sendCurrency === "GBP"
+                    ? `1 GBP = ${activeRate.toLocaleString()} TZS`
+                    : `1 TZS = ${activeRate.toFixed(6)} GBP`
+                  : "-"}
+              </div>
+            </>
+          )}
         </div>
 
-        {/* NAV */}
         <div className="nav">
           <Link href="/">
             <FiHome />
@@ -106,7 +166,6 @@ export default function ExpressPage() {
             <span>Profile</span>
           </Link>
         </div>
-
       </div>
     </main>
   );
