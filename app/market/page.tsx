@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { FiHome, FiTrendingUp, FiUser } from "react-icons/fi";
 import { supabase } from "@/lib/supabase";
+export default function MarketPage() {
 
 const offersData = [
   {
@@ -174,7 +175,6 @@ export default function MarketPage() {
     }
 
     window.location.href = "/#buy-credits";
-  };
 
   return (
     <main className="page">
