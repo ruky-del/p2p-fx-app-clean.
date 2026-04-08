@@ -1,36 +1,37 @@
 import "./globals.css";
+import Script from "next/script";
 import type { Metadata } from "next";
 
-export const metadata = {
-  title: "Rafiki",
-  description:
-    "Buy and sell foreign currency with live offers, fast posting, and direct contact.",
-  keywords: ["forex", "p2p exchange", "currency trading", "TZS", "GBP"],
-  openGraph: {
-    title: "Exchange with Rafiki",
-    description: "Trade currency peer-to-peer easily.",
-    url: "https://p2p-fx-app-clean-vgkm.vercel.app",
-    siteName: "P2P FX",
-    images: [
-      {
-        url: "/icon.svg",
-        width: 800,
-        height: 800,
-      },
-    ],
-    locale: "en_US",
-    type: "website",
+export const metadata: Metadata = {
+  title: "Rafiki Exchange",
+  description: "Exchange with Rafiki",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/logo-clean.png",
+    apple: "/logo-clean.png",
   },
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+
+        <Script id="sw-register" strategy="afterInteractive">
+          {`
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function () {
+                navigator.serviceWorker.register('/sw.js');
+              });
+            }
+          `}
+        </Script>
+      </body>
     </html>
   );
 }
