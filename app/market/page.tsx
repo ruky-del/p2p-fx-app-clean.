@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { FiHome, FiTrendingUp, FiUser } from "react-icons/fi";
 import { supabase } from "@/lib/supabase";
-export default function MarketPage() {
 
 const offersData = [
   {
@@ -89,9 +88,8 @@ export default function MarketPage() {
     "closest"
   );
   const [bestMatchesOnly, setBestMatchesOnly] = useState(false);
-  const [selectedOffer, setSelectedOffer] = useState<(typeof offersData)[number] | null>(
-    null
-  );
+  const [selectedOffer, setSelectedOffer] =
+    useState<(typeof offersData)[number] | null>(null);
   const [notice, setNotice] = useState("");
   const [showCreditNotice, setShowCreditNotice] = useState(false);
 
@@ -175,6 +173,7 @@ export default function MarketPage() {
     }
 
     window.location.href = "/#buy-credits";
+  };
 
   return (
     <main className="page">
@@ -195,13 +194,13 @@ export default function MarketPage() {
             </div>
 
             <select
-  className="market-currency-pill market-currency-select"
-  value={currency}
-  onChange={(e) => setCurrency(e.target.value)}
->
-  <option value="GBP">GBP</option>
-  <option value="TZS">TZS</option>
-</select>
+              className="market-currency-pill market-currency-select"
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+            >
+              <option value="GBP">GBP</option>
+              <option value="TZS">TZS</option>
+            </select>
           </div>
 
           <div className="market-side-switch">
@@ -240,18 +239,24 @@ export default function MarketPage() {
               onChange={(e) => setAmount(e.target.value)}
             />
 
-            <option value="All">All areas</option>
-<option value="London">London</option>
-<option value="Dar es Salaam">Dar es Salaam</option>
-<option value="Birmingham">Birmingham</option>
-<option value="Mwanza">Mwanza</option>
-<option value="Manchester">Manchester</option>
-<option value="Leicester">Leicester</option>
-<option value="Liverpool">Liverpool</option>
-<option value="Nairobi">Nairobi</option>
-<option value="Arusha">Arusha</option>
-<option value="Zanzibar">Zanzibar</option>
-<option value="Dodoma">Dodoma</option>
+            <select
+              className="market-select"
+              value={area}
+              onChange={(e) => setArea(e.target.value)}
+            >
+              <option value="All">All areas</option>
+              <option value="London">London</option>
+              <option value="Dar es Salaam">Dar es Salaam</option>
+              <option value="Birmingham">Birmingham</option>
+              <option value="Mwanza">Mwanza</option>
+              <option value="Manchester">Manchester</option>
+              <option value="Leicester">Leicester</option>
+              <option value="Liverpool">Liverpool</option>
+              <option value="Nairobi">Nairobi</option>
+              <option value="Arusha">Arusha</option>
+              <option value="Zanzibar">Zanzibar</option>
+              <option value="Dodoma">Dodoma</option>
+            </select>
 
             <select
               className="market-select"
@@ -283,64 +288,7 @@ export default function MarketPage() {
           </div>
         )}
 
-       <div className="market-section-card">
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-      gap: "12px",
-    }}
-  >
-    {/* Currency */}
-    <select
-      className="market-select"
-      value={currency}
-      onChange={(e) => setCurrency(e.target.value)}
-    >
-      <option value="GBP">GBP</option>
-      <option value="TZS">TZS</option>
-    </select>
-
-    {/* Amount */}
-    <input
-      className="market-input"
-      type="number"
-      placeholder="Amount"
-      value={amount}
-      onChange={(e) => setAmount(e.target.value)}
-    />
-
-    {/* Area */}
-    <select
-      className="market-select"
-      value={area}
-      onChange={(e) => setArea(e.target.value)}
-    >
-      <option value="All">All areas</option>
-      <option value="London">London</option>
-      <option value="Dar es Salaam">Dar es Salaam</option>
-      <option value="Birmingham">Birmingham</option>
-      <option value="Mwanza">Mwanza</option>
-      <option value="Manchester">Manchester</option>
-      <option value="Leicester">Leicester</option>
-      <option value="Liverpool">Liverpool</option>
-      <option value="Nairobi">Nairobi</option>
-      <option value="Arusha">Arusha</option>
-      <option value="Zanzibar">Zanzibar</option>
-      <option value="Dodoma">Dodoma</option>
-    </select>
-
-    {/* Sort */}
-    <select
-      className="market-select"
-      value={sort}
-      onChange={(e) => setSort(e.target.value)}
-    >
-      <option value="closest">Closest amount</option>
-      <option value="best">Best rate</option>
-    </select>
-  </div>
-</div>
+        <div className="market-section-card">
           <h2 className="market-section-title">Available Offers</h2>
           <p className="market-section-subtitle">
             Open an offer to review trader details and unlock contact information when you are ready.
@@ -381,17 +329,7 @@ export default function MarketPage() {
                         </div>
                       </div>
 
-                      <div
-                        className="market-rate"
-                        style={{
-                          fontSize: "2.2rem",
-                          lineHeight: 1.1,
-                          marginTop: "18px",
-                          marginBottom: "14px",
-                        }}
-                      >
-                        {renderRate(offer)}
-                      </div>
+                      <div className="market-rate">{renderRate(offer)}</div>
 
                       <div className="market-detail-line">
                         <span className="market-detail-label">Available</span>
@@ -489,11 +427,19 @@ export default function MarketPage() {
             </div>
 
             <div className="market-modal-actions">
-              <button className="btn btn-outline" onClick={() => setSelectedOffer(null)} type="button">
+              <button
+                className="btn btn-outline"
+                onClick={() => setSelectedOffer(null)}
+                type="button"
+              >
                 Close
               </button>
 
-              <button className="market-action-btn buy" onClick={handleNeedCredits} type="button">
+              <button
+                className="market-action-btn buy"
+                onClick={handleNeedCredits}
+                type="button"
+              >
                 Buy Credits
               </button>
             </div>
@@ -519,13 +465,13 @@ export default function MarketPage() {
               </button>
 
               <Link
-  href="/?login=1"
-  className="btn btn-primary"
-  style={{ textAlign: "center" }}
-  onClick={() => setShowCreditNotice(false)}
->
-  Go to Login
-</Link>
+                href="/?login=1"
+                className="btn btn-primary"
+                style={{ textAlign: "center" }}
+                onClick={() => setShowCreditNotice(false)}
+              >
+                Go to Login
+              </Link>
             </div>
           </div>
         </div>
