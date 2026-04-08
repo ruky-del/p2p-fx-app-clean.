@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { FiHome, FiTrendingUp, FiUser } from "react-icons/fi";
 import { supabase } from "@/lib/supabase";
@@ -350,7 +351,10 @@ if (params.get("login") === "1") {
       <div className="container">
         <div className="hero-card">
           <div className="eyebrow eyebrow-visible">Tanzania ↔ UK Exchange Network</div>
-          <h1>Rafiki</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+  <Image src="/logo.png" alt="Rafiki Exchange" width={44} height={44} />
+  <h1 style={{ margin: 0 }}>Rafiki Exchange</h1>
+</div>
           <p className="hero-slogan">Exchange with Rafiki</p>
 
           <div className="hero-copy-box">
