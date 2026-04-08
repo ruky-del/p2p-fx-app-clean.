@@ -801,3 +801,6 @@ a {
   min-width: 96px;
   padding-right: 34px;
 }
+html, body {
+  background-color: #0b1220;
+}

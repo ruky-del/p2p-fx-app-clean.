@@ -6,9 +6,18 @@ export const metadata: Metadata = {
   title: "Rafiki Exchange",
   description: "Exchange with Rafiki",
   manifest: "/manifest.json",
+
   icons: {
-    icon: "/logo-clean.png",
-    apple: "/logo-clean.png",
+    icon: "/logo-icon.png",
+    apple: "/logo-icon.png",
+  },
+
+  themeColor: "#0b1220",
+
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Rafiki",
   },
 };
 
