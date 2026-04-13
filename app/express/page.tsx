@@ -21,35 +21,41 @@ export default function ExpressPage() {
   const [loadingRate, setLoadingRate] = useState(true);
   const [rateError, setRateError] = useState("");
 
-  useEffect(() => {
-    const loadRates = async () => {
-      setLoadingRate(true);
-      setRateError("");
+ useEffect(() => {
+  const loadRates = async () => {
+    setLoadingRate(true);
+    setRateError("");
 
-      const { data, error } = await supabase
-        .from("exchange_rates")
-        .select("pair, base_rate, rafiki_rate")
-        .in("pair", ["GBP_TZS", "TZS_GBP"]);
+    const { data, error } = await supabase
+      .from("exchange_rates")
+      .select("pair, base_rate, rafiki_rate")
+      .in("pair", ["GBP_TZS", "TZS_GBP"]);
 
-      if (error) {
-        console.error(error);
-        setRateError("Could not load exchange rates.");
-        setLoadingRate(false);
-        return;
-      }
-
-      const rows = (data || []) as RateRow[];
-
-      const gbpTzs = rows.find((row) => row.pair === "GBP_TZS");
-      const tzsGbp = rows.find((row) => row.pair === "TZS_GBP");
-
-      setGbpToTzsRate(gbpTzs?.rafiki_rate ?? null);
-      setTzsToGbpRate(tzsGbp?.rafiki_rate ?? null);
+    if (error) {
+      console.error("Exchange rates load error:", error);
+      setRateError("Could not load exchange rates.");
       setLoadingRate(false);
-    };
+      return;
+    }
 
-    loadRates();
-  }, []);
+    const rows = (data || []) as RateRow[];
+
+    const gbpTzs = rows.find((row) => row.pair === "GBP_TZS");
+    const tzsGbp = rows.find((row) => row.pair === "TZS_GBP");
+
+    if (!gbpTzs || !tzsGbp) {
+      setRateError("Exchange rates are missing.");
+      setLoadingRate(false);
+      return;
+    }
+
+    setGbpToTzsRate(Number(gbpTzs.rafiki_rate));
+    setTzsToGbpRate(Number(tzsGbp.rafiki_rate));
+    setLoadingRate(false);
+  };
+
+  loadRates();
+}, []);
 
   const switchCurrencies = () => {
     setSendCurrency(receiveCurrency);

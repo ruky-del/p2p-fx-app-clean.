@@ -340,28 +340,32 @@ export default function ProfilePage() {
     window.location.href = "/";
   };
 
-  if (!user) {
-    return (
-      <main className="page">
-        <div className="container">
-          <div className="card">
-            <h2 className="card-title">Please log in</h2>
-            <p className="card-subtitle">
-              You need to log in before viewing your profile and verification details.
-            </p>
-          </div>
+ if (!user) {
+  return (
+    <main className="page">
+      <div className="container">
+        <div className="card">
+          <h2 className="card-title">Please log in</h2>
+          <p className="card-subtitle">
+            You need to log in before viewing your profile and verification details.
+          </p>
 
-          <div className="nav">
-            <Link href="/">Home</Link>
-            <Link href="/market">Market</Link>
-            <Link href="/profile" className="active">
-              Profile
-            </Link>
+          <div className="stack top-space">
+            <a href="/?login=1" className="btn primary">
+              Log in / Create account
+            </a>
           </div>
         </div>
-      </main>
-    );
-  }
+      </div>
+
+      <div className="nav">
+        <a href="/">Home</a>
+        <a href="/market">Market</a>
+        <a href="/profile" className="active">Profile</a>
+      </div>
+    </main>
+  );
+}
 
   return (
     <main className="page">
