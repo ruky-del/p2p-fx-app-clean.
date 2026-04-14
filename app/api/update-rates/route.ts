@@ -8,7 +8,7 @@ const supabase = createClient(
 export async function GET() {
   try {
     const response = await fetch(
-  "https://open.er-api.com/v6/latest/GBP",
+ "https://api.exchangerate-api.com/v4/latest/GBP"
   { cache: "no-store" }
 );
 
