@@ -51,13 +51,17 @@ if (!worldRate || typeof worldRate !== "number") {
       .eq("pair", "GBP_TZS");
 
     if (gbpError) {
-      console.error("GBP_TZS update error:", gbpError);
-      return NextResponse.json(
-        { error: "Failed to update GBP_TZS rate." },
-        { status: 500 }
-      );
-    }
-
+  console.error("GBP_TZS update error:", gbpError);
+  return NextResponse.json(
+    {
+      error: "Failed to update GBP_TZS rate.",
+      details: gbpError.message,
+      code: gbpError.code,
+      hint: gbpError.hint,
+    },
+    { status: 500 }
+  );
+}
     const { error: tzsError } = await supabase
       .from("exchange_rates")
       .update({
@@ -68,12 +72,17 @@ if (!worldRate || typeof worldRate !== "number") {
       .eq("pair", "TZS_GBP");
 
     if (tzsError) {
-      console.error("TZS_GBP update error:", tzsError);
-      return NextResponse.json(
-        { error: "Failed to update TZS_GBP rate." },
-        { status: 500 }
-      );
-    }
+  console.error("TZS_GBP update error:", tzsError);
+  return NextResponse.json(
+    {
+      error: "Failed to update TZS_GBP rate.",
+      details: tzsError.message,
+      code: tzsError.code,
+      hint: tzsError.hint,
+    },
+    { status: 500 }
+  );
+}
 
     return NextResponse.json({
       success: true,
