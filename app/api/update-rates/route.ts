@@ -16,8 +16,8 @@ if (!response.ok) {
 }
 
 const data = await response.json();
-
-const worldRate = data?.rates?.TZS;
+console.log("FULL API RESPONSE:", data);
+const worldRate = data.rates.TZS;
 
 if (!worldRate || typeof worldRate !== "number") {
   console.error("Rate API response:", data);
