@@ -7,11 +7,10 @@ const supabase = createClient(
 );
 export async function GET() {
   try {
-    const response = await fetch(
- "https://api.exchangerate-api.com/v4/latest/GBP"
+   const response = await fetch(
+  "https://api.exchangerate-api.com/v4/latest/GBP",
   { cache: "no-store" }
 );
-
 if (!response.ok) {
   return NextResponse.json(
     { error: "Failed to fetch live market rate." },
