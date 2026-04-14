@@ -4,27 +4,28 @@ import { supabase } from "@/lib/supabase";
 export async function GET() {
   try {
     const response = await fetch(
-      "https://api.exchangerate.host/latest?base=GBP&symbols=TZS",
-      { cache: "no-store" }
-    );
+  "https://open.er-api.com/v6/latest/GBP",
+  { cache: "no-store" }
+);
 
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: "Failed to fetch live market rate." },
-        { status: 500 }
-      );
-    }
+if (!response.ok) {
+  return NextResponse.json(
+    { error: "Failed to fetch live market rate." },
+    { status: 500 }
+  );
+}
 
-    const data = await response.json();
+const data = await response.json();
 
-    const worldRate = data?.rates?.TZS;
+const worldRate = data?.rates?.TZS;
 
-    if (!worldRate || typeof worldRate !== "number") {
-      return NextResponse.json(
-        { error: "Invalid market rate received." },
-        { status: 500 }
-      );
-    }
+if (!worldRate || typeof worldRate !== "number") {
+  console.error("Rate API response:", data);
+  return NextResponse.json(
+    { error: "Invalid market rate received." },
+    { status: 500 }
+  );
+}
 
     // Change this margin whenever you want
     const margin = 0.02; // 2%
