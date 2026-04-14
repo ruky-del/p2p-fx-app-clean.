@@ -9,7 +9,7 @@ console.log("SERVICE KEY PRESENT:", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
 );
 export async function GET() {
   try {
-   const response = await fetch(
+  const response = await fetch(
   "https://api.exchangerate-api.com/v4/latest/GBP",
   { cache: "no-store" }
 );
