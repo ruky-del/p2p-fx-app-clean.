@@ -90,12 +90,13 @@ if (!worldRate || typeof worldRate !== "number") {
 }
 
     return NextResponse.json({
-      success: true,
-      worldRate,
-      rafikiGbpToTzs,
-      rafikiTzsToGbp,
-      margin,
-    });
+  success: true,
+  worldRate,
+  rafikiGbpToTzs,
+  rafikiTzsToGbp,
+  margin,
+  updatedAt: new Date().toISOString(),
+});
   } catch (error) {
     console.error("Update rates route error:", error);
     return NextResponse.json(
