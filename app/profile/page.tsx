@@ -133,7 +133,6 @@ export default function ProfilePage() {
       };
 
       applyProfile(updatedProfile);
-
       setMessage("Profile saved successfully.");
       setMessageType("success");
     } catch (error) {
@@ -164,7 +163,130 @@ export default function ProfilePage() {
             </p>
 
             <div className="stack top-space">
-              <Link href="/?login=1"
+              <Link href="/?login=1" className="btn btn-primary" style={{ textAlign: "center" }}>
+                Log in / Create account
+              </Link>
+
+              <Link href="/express" className="btn btn-outline" style={{ textAlign: "center" }}>
+                Continue to Express Exchange
+              </Link>
+            </div>
+          </div>
+
+          <div className="nav">
+            <Link href="/">
+              <FiHome />
+              <span>Home</span>
+            </Link>
+
+            <Link href="/market">
+              <FiTrendingUp />
+              <span>Market</span>
+            </Link>
+
+            <Link href="/profile" className="active">
+              <FiUser />
+              <span>Profile</span>
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="page">
+      <div className="container">
+        {message && (
+          <div
+            className={`card ${
+              messageType === "success"
+                ? "message-success"
+                : messageType === "warn"
+                ? "message-warn"
+                : ""
+            }`}
+          >
+            <h2 className="card-title">
+              {messageType === "success"
+                ? "Success"
+                : messageType === "warn"
+                ? "Notice"
+                : "Update"}
+            </h2>
+            <p className="card-subtitle">{message}</p>
+          </div>
+        )}
+
+        <div className="card">
+          <h1 className="card-title">Profile</h1>
+          <p className="card-subtitle">
+            Manage your identity, phone number and available credits.
+          </p>
+
+          <div className="form-stack top-space">
+            <label className="input-label">
+              Name
+              <input
+                className="input"
+                placeholder="Full name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
+            </label>
+
+            <label className="input-label">
+              Phone
+              <input
+                className="input"
+                placeholder="Local number? Just type 07... and the app will convert it."
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </label>
+
+            <div className="helper-text">Credits Balance: {profile?.credits || 0}</div>
+
+            <button
+              className="btn btn-primary"
+              onClick={saveProfile}
+              disabled={savingProfile}
+              type="button"
+            >
+              {savingProfile ? "Saving..." : "Save Profile"}
+            </button>
+
+            <button className="btn btn-dark" onClick={logout} type="button">
+              Logout
+            </button>
+          </div>
+        </div>
+
+        <div className="card">
+          <h2 className="card-title">Verification Status</h2>
+          <p className="card-subtitle">
+            Not verified yet. Complete verification in the future to build more buyer
+            trust and qualify for a stronger trader profile.
+          </p>
+        </div>
+
+        <div className="nav">
+          <Link href="/">
+            <FiHome />
+            <span>Home</span>
+          </Link>
+
+          <Link href="/market">
+            <FiTrendingUp />
+            <span>Market</span>
+          </Link>
+
+          <Link href="/profile" className="active">
+            <FiUser />
+            <span>Profile</span>
+          </Link>
+        </div>
+      </div>
     </main>
   );
 }
