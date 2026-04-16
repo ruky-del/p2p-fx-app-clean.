@@ -466,6 +466,9 @@ export default function HomePage() {
               Log in or create your account to manage your profile, unlock trader
               contacts, and complete secure transactions.
             </p>
+<Link href="/express" className="button secondary top-space">
+  Continue to Express Exchange
+</Link>
 
             <div className="form-stack top-space">
               <label className="input-label">
