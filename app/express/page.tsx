@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FiHome, FiTrendingUp, FiUser } from "react-icons/fi";
 import { supabase } from "@/lib/supabase";
 
@@ -21,79 +21,88 @@ export default function ExpressPage() {
   const [tzsToGbpRate, setTzsToGbpRate] = useState<number | null>(null);
   const [loadingRate, setLoadingRate] = useState(true);
   const [rateError, setRateError] = useState("");
-const [lastUpdated, setLastUpdated] = useState("");
+  const [lastUpdated, setLastUpdated] = useState("");
 
- useEffect(() => {
-  const loadRates = async () => {
-    setLoadingRate(true);
-    setRateError("");
+  useEffect(() => {
+    const loadRates = async () => {
+      setLoadingRate(true);
+      setRateError("");
 
-    const { data, error } = await supabase
-      .from("exchange_rates")
-.select("pair, base_rate, rafiki_rate, updated_at")
-      .in("pair", ["GBP_TZS", "TZS_GBP"]);
+      const { data, error } = await supabase
+        .from("exchange_rates")
+        .select("pair, base_rate, rafiki_rate, updated_at")
+        .in("pair", ["GBP_TZS", "TZS_GBP"]);
 
-    if (error) {
-      console.error("Exchange rates load error:", error);
-      setRateError("Could not load exchange rates.");
+      if (error) {
+        console.error("Exchange rates load error:", error);
+        setRateError("Could not load exchange rates.");
+        setLoadingRate(false);
+        return;
+      }
+
+      const rows = (data || []) as RateRow[];
+
+      const gbpTzs = rows.find((row) => row.pair === "GBP_TZS");
+      const tzsGbp = rows.find((row) => row.pair === "TZS_GBP");
+
+      if (gbpTzs || tzsGbp) {
+        const latestUpdatedAt =
+          gbpTzs?.updated_at && tzsGbp?.updated_at
+            ? new Date(gbpTzs.updated_at) > new Date(tzsGbp.updated_at)
+              ? gbpTzs.updated_at
+              : tzsGbp.updated_at
+            : gbpTzs?.updated_at || tzsGbp?.updated_at || "";
+
+        setLastUpdated(latestUpdatedAt);
+      }
+
+      if (!gbpTzs || !tzsGbp) {
+        setRateError("Exchange rates are missing.");
+        setLoadingRate(false);
+        return;
+      }
+
+      setGbpToTzsRate(Number(gbpTzs.rafiki_rate));
+      setTzsToGbpRate(Number(tzsGbp.rafiki_rate));
       setLoadingRate(false);
-      return;
+    };
+
+    loadRates();
+  }, []);
+
+  const activeRate = useMemo(() => {
+    if (sendCurrency === "GBP" && receiveCurrency === "TZS") {
+      return gbpToTzsRate;
     }
 
-    const rows = (data || []) as RateRow[];
-
-    const gbpTzs = rows.find((row) => row.pair === "GBP_TZS");
-    const tzsGbp = rows.find((row) => row.pair === "TZS_GBP");
-const latestUpdatedAt =
-  gbpTzs?.updated_at && tzsGbp?.updated_at
-    ? new Date(gbpTzs.updated_at) > new Date(tzsGbp.updated_at)
-      ? gbpTzs.updated_at
-      : tzsGbp.updated_at
-    : gbpTzs?.updated_at || tzsGbp?.updated_at || "";
-
-setLastUpdated(latestUpdatedAt);
-}
-
-    if (!gbpTzs || !tzsGbp) {
-      setRateError("Exchange rates are missing.");
-      setLoadingRate(false);
-      return;
+    if (sendCurrency === "TZS" && receiveCurrency === "GBP") {
+      return tzsToGbpRate;
     }
 
-    setGbpToTzsRate(Number(gbpTzs.rafiki_rate));
-    setTzsToGbpRate(Number(tzsGbp.rafiki_rate));
-    setLoadingRate(false);
-  };
+    return null;
+  }, [sendCurrency, receiveCurrency, gbpToTzsRate, tzsToGbpRate]);
 
-  loadRates();
-}, []);
+  const estimatedReceive = useMemo(() => {
+    const amount = Number(sendAmount);
 
-  const switchCurrencies = () => {
+    if (!amount || !activeRate) return 0;
+
+    return amount * activeRate;
+  }, [sendAmount, activeRate]);
+
+  const swapCurrencies = () => {
     setSendCurrency(receiveCurrency);
     setReceiveCurrency(sendCurrency);
   };
 
-  const activeRate =
-    sendCurrency === "GBP" && receiveCurrency === "TZS"
-      ? gbpToTzsRate
-      : sendCurrency === "TZS" && receiveCurrency === "GBP"
-      ? tzsToGbpRate
-      : 1;
-
-  const estimatedReceive =
-    activeRate === null ? 0 : (Number(sendAmount) || 0) * activeRate;
-
   const formatValue = (value: number, currency: string) => {
-    if (currency === "GBP") {
-      return `£${value.toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })}`;
+    if (!value) return `0 ${currency}`;
+
+    if (currency === "TZS") {
+      return `${value.toLocaleString()} TZS`;
     }
 
-    return `${value.toLocaleString(undefined, {
-      maximumFractionDigits: 0,
-    })} TZS`;
+    return `${value.toFixed(6)} GBP`;
   };
 
   return (
@@ -129,16 +138,16 @@ setLastUpdated(latestUpdatedAt);
               type="number"
               value={sendAmount}
               onChange={(e) => setSendAmount(e.target.value)}
-              placeholder="Amount"
+              placeholder="Enter amount"
             />
 
-            <button className="btn btn-outline" onClick={switchCurrencies} type="button">
+            <button className="button secondary" onClick={swapCurrencies}>
               Swap
             </button>
           </div>
         </div>
 
-        <div className="card">
+        <div className="card top-space">
           <h2 className="card-title">Estimate</h2>
 
           {loadingRate ? (
@@ -151,7 +160,13 @@ setLastUpdated(latestUpdatedAt);
                 Rate: {sendCurrency} → {receiveCurrency}
               </p>
 
-              <div style={{ marginTop: "16px", fontSize: "20px", fontWeight: 600 }}>
+              <div
+                style={{
+                  marginTop: "16px",
+                  fontSize: "20px",
+                  fontWeight: 600,
+                }}
+              >
                 You receive: {formatValue(estimatedReceive, receiveCurrency)}
               </div>
 
@@ -161,37 +176,37 @@ setLastUpdated(latestUpdatedAt);
                   ? sendCurrency === "GBP"
                     ? `1 GBP = ${activeRate.toLocaleString()} TZS`
                     : `1 TZS = ${activeRate.toFixed(6)} GBP`
-                  : "-"}
+                  : "--"}
               </div>
 
-    {lastUpdated ? (
-  <p style={{ fontSize: "12px", opacity: 0.7, marginTop: "8px" }}>
-    Last updated:{" "}
-    {new Date(lastUpdated).toLocaleString("en-GB", {
-      timeZone: "Africa/Dar_es_Salaam",
-    })}
-  </p>
-) : null}
+              {lastUpdated ? (
+                <p style={{ fontSize: "12px", opacity: 0.7, marginTop: "8px" }}>
+                  Last updated:{" "}
+                  {new Date(lastUpdated).toLocaleString("en-GB", {
+                    timeZone: "Africa/Dar_es_Salaam",
+                  })}
+                </p>
+              ) : null}
             </>
           )}
         </div>
+      </div>
 
-        <div className="nav">
-          <Link href="/">
-            <FiHome />
-            <span>Home</span>
-          </Link>
+      <div className="nav">
+        <Link href="/">
+          <FiHome />
+          <span>Home</span>
+        </Link>
 
-          <Link href="/market">
-            <FiTrendingUp />
-            <span>Market</span>
-          </Link>
+        <Link href="/market" className="active">
+          <FiTrendingUp />
+          <span>Market</span>
+        </Link>
 
-          <Link href="/profile">
-            <FiUser />
-            <span>Profile</span>
-          </Link>
-        </div>
+        <Link href="/profile">
+          <FiUser />
+          <span>Profile</span>
+        </Link>
       </div>
     </main>
   );
