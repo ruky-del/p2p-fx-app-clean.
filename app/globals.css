@@ -804,3 +804,47 @@ a {
 html, body {
   background-color: #0b1220;
 }
+.button {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: none;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #00c853, #00e676);
+  color: #0b0f1a;
+  transition: all 0.2s ease;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 200, 83, 0.3);
+}
+
+.button:active {
+  transform: scale(0.98);
+}
+
+.swap-button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 6px 10px;
+  color: #ccc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.swap-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: #555;
+}
+
+.receive-amount {
+  font-size: 26px;
+  font-weight: 700;
+  color: #00e676;
+  margin-top: 12px;
+}

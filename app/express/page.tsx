@@ -72,9 +72,9 @@ export default function ExpressPage() {
 
   const tradeLabel =
     sendCurrency === "GBP" && receiveCurrency === "TZS"
-      ? "We buy GBP"
+      ? "We buy GBP (you receive TZS)"
       : sendCurrency === "TZS" && receiveCurrency === "GBP"
-      ? "We sell GBP"
+      ? "We sell GBP (you pay TZS)"
       : "Exchange";
 
   const estimatedReceive = useMemo(() => {
@@ -117,14 +117,9 @@ export default function ExpressPage() {
             <button
               type="button"
               onClick={swapCurrencies}
-              style={{
-                background: "transparent",
-                border: "1px solid #444",
-                borderRadius: "8px",
-                padding: "6px 10px",
-                cursor: "pointer",
-                color: "#fff",
-              }}
+              className="swap-button"
+              aria-label="Swap currencies"
+              title="Swap currencies"
             >
               ↔
             </button>
@@ -168,19 +163,9 @@ export default function ExpressPage() {
             <p className="card-subtitle">{rateError}</p>
           ) : (
             <>
-              <p className="card-subtitle">
-                {sendCurrency === "GBP"
-                  ? "We buy GBP (you receive TZS)"
-                  : "We sell GBP (you pay TZS)"}
-              </p>
+              <p className="card-subtitle">{tradeLabel}</p>
 
-              <div
-                style={{
-                  marginTop: "16px",
-                  fontSize: "20px",
-                  fontWeight: 600,
-                }}
-              >
+              <div className="receive-amount">
                 You receive: {formatValue(estimatedReceive, receiveCurrency)}
               </div>
 
