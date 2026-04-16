@@ -179,14 +179,7 @@ export default function ExpressPage() {
                   : "--"}
               </div>
 
-              {lastUpdated ? (
-                <p style={{ fontSize: "12px", opacity: 0.7, marginTop: "8px" }}>
-                  Last updated:{" "}
-                  {new Date(lastUpdated).toLocaleString("en-GB", {
-                    timeZone: "Africa/Dar_es_Salaam",
-                  })}
-                </p>
-              ) : null}
+
             </>
           )}
         </div>
