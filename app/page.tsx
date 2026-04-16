@@ -251,51 +251,47 @@ export default function HomePage() {
   };
 
   const handleSendCode = async () => {
-    if (!authEmail.trim()) {
-      setMessage("Please enter your email address.");
+  if (!authEmail.trim()) {
+    setMessage("Please enter your email address.");
+    setMessageType("warn");
+    return;
+  }
+
+  if (cooldown > 0) {
+    setMessage(`Please wait ${cooldown} seconds before requesting another code.`);
+    setMessageType("info");
+    return;
+  }
+
+  try {
+    setAuthLoading(true);
+    setMessage("");
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email: authEmail.trim(),
+      options: {
+        emailRedirectTo: `${window.location.origin}/profile`,
+      },
+    });
+
+    if (error) {
+      setMessage(error.message);
       setMessageType("warn");
       return;
     }
 
-    if (cooldown > 0) {
-      setMessage(`Please wait ${cooldown} seconds before requesting another code.`);
-      setMessageType("info");
-      return;
-    }
-
-    try {
-      setAuthLoading(true);
-      setMessage("");
-
-      const { error } = await supabase.auth.signInWithOtp({
-        email: authEmail.trim(),
-        options: {
-          emailRedirectTo: `${window.location.origin}/profile`,
-        },
-      });
-
-      if (error) {
-        setMessage(
-          error.message === "email rate limit exceeded"
-            ? "Too many login requests were made. Please wait a short moment and try again."
-            : error.message
-        );
-        setMessageType("warn");
-        return;
-      }
-
-      setAuthStep("code");
-      setCooldown(30);
-      setMessage("Check your email for your login code.");
-      setMessageType("info");
-    } catch (error) {
-      console.error(error);
-      setMessage("We could not send your login code. Please try again.");
-      setMessageType("warn");
-    } finally {
-      setAuthLoading(false);
-    }
-  };
+    setAuthStep("code");
+    setCooldown(30);
+    setMessage("Check your email for your login code.");
+    setMessageType("info");
+  } catch (error) {
+    console.error("Send code error:", error);
+    setMessage("We could not send your login code. Please try again.");
+    setMessageType("warn");
+  } finally {
+    setAuthLoading(false);
+  }
+};
 
   const handleVerifyCode = async () => {
     if (!authEmail.trim() || !authCode.trim()) {
@@ -437,9 +433,6 @@ export default function HomePage() {
               Find Traders (P2P)
             </Link>
 
-            <Link href="/express" className="btn btn-success" style={{ textAlign: "center" }}>
-              ⚡ Express Exchange
-            </Link>
           </div>
         </div>
 
@@ -463,100 +456,96 @@ export default function HomePage() {
           </div>
         </div>
 
-        {!user && (
-          <div className="card" id="login-section">
-            <h2 className="card-title">Welcome to Rafiki</h2>
-            <p className="card-subtitle">
-              Log in or create your account to manage your profile, unlock trader
-              contacts, and complete secure transactions.
-            </p>
+       {!user && (
+  <div className="card" id="login-section">
+    <h2 className="card-title">Welcome to Rafiki</h2>
+    <p className="card-subtitle">
+      Log in or create your account to manage your profile, unlock trader
+      contacts, and complete secure transactions.
+    </p>
 
-            <Link href="/express" className="btn btn-outline" style={{ textAlign: "center" }}>
-              Continue to Express Exchange
-            </Link>
+    <div className="form-stack top-space">
+      <label className="input-label">
+        Email address
+        <input
+          className="input"
+          type="email"
+          placeholder="Enter your email address"
+          value={authEmail}
+          onChange={(e) => setAuthEmail(e.target.value)}
+        />
+      </label>
 
-            <div className="form-stack top-space">
-              <label className="input-label">
-                Email address
-                <input
-                  className="input"
-                  type="email"
-                  placeholder="Enter your email address"
-                  value={authEmail}
-                  onChange={(e) => setAuthEmail(e.target.value)}
-                />
-              </label>
+      {authStep === "code" && (
+        <label className="input-label">
+          Login code
+          <input
+            className="input"
+            type="text"
+            placeholder="Enter the code from your email"
+            value={authCode}
+            onChange={(e) => setAuthCode(e.target.value)}
+          />
+        </label>
+      )}
 
-              {authStep === "code" && (
-                <label className="input-label">
-                  Login code
-                  <input
-                    className="input"
-                    type="text"
-                    placeholder="Enter the code from your email"
-                    value={authCode}
-                    onChange={(e) => setAuthCode(e.target.value)}
-                  />
-                </label>
-              )}
+      {authStep === "email" ? (
+        <button
+          className="btn btn-primary"
+          onClick={handleSendCode}
+          disabled={authLoading || cooldown > 0}
+          type="button"
+        >
+          {authLoading
+            ? "Sending code..."
+            : cooldown > 0
+            ? `Please wait ${cooldown}s`
+            : "Send Login Code"}
+        </button>
+      ) : (
+        <>
+          <button
+            className="btn btn-primary"
+            onClick={handleVerifyCode}
+            disabled={authLoading}
+            type="button"
+          >
+            {authLoading ? "Verifying..." : "Verify Code & Login"}
+          </button>
 
-              {authStep === "email" ? (
-                <button
-                  className="btn btn-primary"
-                  onClick={handleSendCode}
-                  disabled={authLoading || cooldown > 0}
-                  type="button"
-                >
-                  {authLoading
-                    ? "Sending code..."
-                    : cooldown > 0
-                    ? `Please wait ${cooldown}s`
-                    : "Send Login Code"}
-                </button>
-              ) : (
-                <>
-                  <button
-                    className="btn btn-primary"
-                    onClick={handleVerifyCode}
-                    disabled={authLoading}
-                    type="button"
-                  >
-                    {authLoading ? "Verifying..." : "Verify Code & Login"}
-                  </button>
+          <button
+            className="btn btn-outline"
+            onClick={() => {
+              setAuthStep("email");
+              setAuthCode("");
+              setMessage("You can enter a different email address below.");
+              setMessageType("info");
+            }}
+            disabled={authLoading}
+            type="button"
+          >
+            Change Email
+          </button>
 
-                  <button
-                    className="btn btn-outline"
-                    onClick={() => {
-                      setAuthStep("email");
-                      setAuthCode("");
-                      setMessage("You can enter a different email address below.");
-                      setMessageType("info");
-                    }}
-                    disabled={authLoading}
-                    type="button"
-                  >
-                    Change Email
-                  </button>
+          <button
+            className="btn btn-outline"
+            onClick={handleSendCode}
+            disabled={authLoading || cooldown > 0}
+            type="button"
+          >
+            {cooldown > 0 ? `Resend available in ${cooldown}s` : "Resend Code"}
+          </button>
+        </>
+      )}
 
-                  <button
-                    className="btn btn-outline"
-                    onClick={handleSendCode}
-                    disabled={authLoading || cooldown > 0}
-                    type="button"
-                  >
-                    {cooldown > 0 ? `Resend available in ${cooldown}s` : "Resend Code"}
-                  </button>
-                </>
-              )}
-
-              <div className="helper-text">
-                {authStep === "email"
-                  ? "We will send a secure login code to your email."
-                  : "Check your email, copy the code, and enter it above."}
-              </div>
-            </div>
-          </div>
-        )}
+      <div className="helper-text">
+        {authStep === "email"
+          ? "We will send a secure login code to your email."
+          : "Check your email, copy the code, and enter it above."}
+      </div>
+    </div>
+  </div>
+)}
 
         <div className="card" id="buy-credits">
           <h2 className="card-title">Unlock Seller Contacts</h2>
