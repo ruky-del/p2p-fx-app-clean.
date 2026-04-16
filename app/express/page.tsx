@@ -44,8 +44,14 @@ const [lastUpdated, setLastUpdated] = useState("");
 
     const gbpTzs = rows.find((row) => row.pair === "GBP_TZS");
     const tzsGbp = rows.find((row) => row.pair === "TZS_GBP");
-if (rows.length > 0 && rows[0].updated_at) {
-  setLastUpdated(rows[0].updated_at);
+const latestUpdatedAt =
+  gbpTzs?.updated_at && tzsGbp?.updated_at
+    ? new Date(gbpTzs.updated_at) > new Date(tzsGbp.updated_at)
+      ? gbpTzs.updated_at
+      : tzsGbp.updated_at
+    : gbpTzs?.updated_at || tzsGbp?.updated_at || "";
+
+setLastUpdated(latestUpdatedAt);
 }
 
     if (!gbpTzs || !tzsGbp) {
@@ -157,9 +163,13 @@ if (rows.length > 0 && rows[0].updated_at) {
                     : `1 TZS = ${activeRate.toFixed(6)} GBP`
                   : "-"}
               </div>
-{lastUpdated ? (
+
+    {lastUpdated ? (
   <p style={{ fontSize: "12px", opacity: 0.7, marginTop: "8px" }}>
-    Last updated: {new Date(lastUpdated).toLocaleString()}
+    Last updated:{" "}
+    {new Date(lastUpdated).toLocaleString("en-GB", {
+      timeZone: "Africa/Dar_es_Salaam",
+    })}
   </p>
 ) : null}
             </>
