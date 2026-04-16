@@ -21,7 +21,6 @@ export default function ExpressPage() {
   const [tzsToGbpRate, setTzsToGbpRate] = useState<number | null>(null);
   const [loadingRate, setLoadingRate] = useState(true);
   const [rateError, setRateError] = useState("");
-  const [lastUpdated, setLastUpdated] = useState("");
 
   useEffect(() => {
     const loadRates = async () => {
@@ -44,17 +43,6 @@ export default function ExpressPage() {
 
       const gbpTzs = rows.find((row) => row.pair === "GBP_TZS");
       const tzsGbp = rows.find((row) => row.pair === "TZS_GBP");
-
-      if (gbpTzs || tzsGbp) {
-        const latestUpdatedAt =
-          gbpTzs?.updated_at && tzsGbp?.updated_at
-            ? new Date(gbpTzs.updated_at) > new Date(tzsGbp.updated_at)
-              ? gbpTzs.updated_at
-              : tzsGbp.updated_at
-            : gbpTzs?.updated_at || tzsGbp?.updated_at || "";
-
-        setLastUpdated(latestUpdatedAt);
-      }
 
       if (!gbpTzs || !tzsGbp) {
         setRateError("Exchange rates are missing.");
@@ -82,6 +70,13 @@ export default function ExpressPage() {
     return null;
   }, [sendCurrency, receiveCurrency, gbpToTzsRate, tzsToGbpRate]);
 
+  const tradeLabel =
+    sendCurrency === "GBP" && receiveCurrency === "TZS"
+      ? "We buy GBP"
+      : sendCurrency === "TZS" && receiveCurrency === "GBP"
+      ? "We sell GBP"
+      : "Exchange";
+
   const estimatedReceive = useMemo(() => {
     const amount = Number(sendAmount);
 
@@ -91,8 +86,12 @@ export default function ExpressPage() {
   }, [sendAmount, activeRate]);
 
   const swapCurrencies = () => {
-    setSendCurrency(receiveCurrency);
-    setReceiveCurrency(sendCurrency);
+    const oldSend = sendCurrency;
+    const oldReceive = receiveCurrency;
+
+    setSendCurrency(oldReceive);
+    setReceiveCurrency(oldSend);
+    setSendAmount("");
   };
 
   const formatValue = (value: number, currency: string) => {
@@ -141,7 +140,7 @@ export default function ExpressPage() {
               placeholder="Enter amount"
             />
 
-            <button className="button secondary" onClick={swapCurrencies}>
+            <button className="button secondary" type="button" onClick={swapCurrencies}>
               Swap
             </button>
           </div>
@@ -156,9 +155,7 @@ export default function ExpressPage() {
             <p className="card-subtitle">{rateError}</p>
           ) : (
             <>
-              <p className="card-subtitle">
-                Rate: {sendCurrency} → {receiveCurrency}
-              </p>
+              <p className="card-subtitle">{tradeLabel}</p>
 
               <div
                 style={{
@@ -171,7 +168,7 @@ export default function ExpressPage() {
               </div>
 
               <div style={{ marginTop: "10px", opacity: 0.8 }}>
-                Rafiki rate:{" "}
+                Exchange rate:{" "}
                 {activeRate !== null
                   ? sendCurrency === "GBP"
                     ? `1 GBP = ${activeRate.toLocaleString()} TZS`
@@ -179,11 +176,9 @@ export default function ExpressPage() {
                   : "--"}
               </div>
 
-<Link href="/profile" className="button top-space">
-  Continue to Exchange
-</Link>
-
-
+              <Link href="/profile" className="button top-space">
+                Continue to Exchange
+              </Link>
             </>
           )}
         </div>
