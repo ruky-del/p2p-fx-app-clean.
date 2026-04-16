@@ -113,6 +113,23 @@ export default function ExpressPage() {
             Quick estimate for direct exchange between Tanzania and the UK.
           </p>
 
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "12px" }}>
+            <button
+              type="button"
+              onClick={swapCurrencies}
+              style={{
+                background: "transparent",
+                border: "1px solid #444",
+                borderRadius: "8px",
+                padding: "6px 10px",
+                cursor: "pointer",
+                color: "#fff",
+              }}
+            >
+              ↔
+            </button>
+          </div>
+
           <div className="stack top-space">
             <select
               className="input"
@@ -139,10 +156,6 @@ export default function ExpressPage() {
               onChange={(e) => setSendAmount(e.target.value)}
               placeholder="Enter amount"
             />
-
-            <button className="button secondary" type="button" onClick={swapCurrencies}>
-              Swap
-            </button>
           </div>
         </div>
 
@@ -155,7 +168,11 @@ export default function ExpressPage() {
             <p className="card-subtitle">{rateError}</p>
           ) : (
             <>
-              <p className="card-subtitle">{tradeLabel}</p>
+              <p className="card-subtitle">
+                {sendCurrency === "GBP"
+                  ? "We buy GBP (you receive TZS)"
+                  : "We sell GBP (you pay TZS)"}
+              </p>
 
               <div
                 style={{
@@ -176,9 +193,15 @@ export default function ExpressPage() {
                   : "--"}
               </div>
 
-              <Link href="/profile" className="button top-space">
+              <button
+                className="button top-space"
+                type="button"
+                onClick={() => {
+                  window.location.href = "/profile";
+                }}
+              >
                 Continue to Exchange
-              </Link>
+              </button>
             </>
           )}
         </div>
