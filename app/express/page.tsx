@@ -179,6 +179,10 @@ export default function ExpressPage() {
                   : "--"}
               </div>
 
+<Link href="/profile" className="button top-space">
+  Continue to Exchange
+</Link>
+
 
             </>
           )}
