@@ -265,9 +265,13 @@ export default function HomePage() {
 
     try {
       setAuthLoading(true);
+      setMessage("");
 
       const { error } = await supabase.auth.signInWithOtp({
         email: authEmail.trim(),
+        options: {
+          emailRedirectTo: `${window.location.origin}/profile`,
+        },
       });
 
       if (error) {
@@ -282,7 +286,7 @@ export default function HomePage() {
 
       setAuthStep("code");
       setCooldown(30);
-      setMessage("We sent a secure login code to your email. Enter it below to continue.");
+      setMessage("Check your email for your login code.");
       setMessageType("info");
     } catch (error) {
       console.error(error);
@@ -466,9 +470,10 @@ export default function HomePage() {
               Log in or create your account to manage your profile, unlock trader
               contacts, and complete secure transactions.
             </p>
-<Link href="/express" className="button secondary top-space">
-  Continue to Express Exchange
-</Link>
+
+            <Link href="/express" className="btn btn-outline" style={{ textAlign: "center" }}>
+              Continue to Express Exchange
+            </Link>
 
             <div className="form-stack top-space">
               <label className="input-label">
