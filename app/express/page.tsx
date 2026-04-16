@@ -9,6 +9,7 @@ type RateRow = {
   pair: string;
   base_rate: number;
   rafiki_rate: number;
+  updated_at?: string;
 };
 
 export default function ExpressPage() {
@@ -20,6 +21,7 @@ export default function ExpressPage() {
   const [tzsToGbpRate, setTzsToGbpRate] = useState<number | null>(null);
   const [loadingRate, setLoadingRate] = useState(true);
   const [rateError, setRateError] = useState("");
+const [lastUpdated, setLastUpdated] = useState("");
 
  useEffect(() => {
   const loadRates = async () => {
@@ -28,7 +30,7 @@ export default function ExpressPage() {
 
     const { data, error } = await supabase
       .from("exchange_rates")
-      .select("pair, base_rate, rafiki_rate")
+.select("pair, base_rate, rafiki_rate, updated_at")
       .in("pair", ["GBP_TZS", "TZS_GBP"]);
 
     if (error) {
@@ -42,6 +44,9 @@ export default function ExpressPage() {
 
     const gbpTzs = rows.find((row) => row.pair === "GBP_TZS");
     const tzsGbp = rows.find((row) => row.pair === "TZS_GBP");
+if (rows.length > 0 && rows[0].updated_at) {
+  setLastUpdated(rows[0].updated_at);
+}
 
     if (!gbpTzs || !tzsGbp) {
       setRateError("Exchange rates are missing.");
@@ -152,6 +157,11 @@ export default function ExpressPage() {
                     : `1 TZS = ${activeRate.toFixed(6)} GBP`
                   : "-"}
               </div>
+{lastUpdated ? (
+  <p style={{ fontSize: "12px", opacity: 0.7, marginTop: "8px" }}>
+    Last updated: {new Date(lastUpdated).toLocaleString()}
+  </p>
+) : null}
             </>
           )}
         </div>
