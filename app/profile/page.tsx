@@ -165,3 +165,6 @@ export default function ProfilePage() {
 
             <div className="stack top-space">
               <Link href="/?login=1"
+    </main>
+  );
+}
