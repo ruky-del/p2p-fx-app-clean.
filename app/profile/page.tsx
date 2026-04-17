@@ -13,9 +13,20 @@ type UserProfile = {
   email?: string | null;
 };
 
+type ExchangeRequest = {
+  id: string;
+  send_currency: string;
+  receive_currency: string;
+  send_amount: number;
+  receive_amount: number;
+  status: string;
+  created_at: string;
+};
+
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [requests, setRequests] = useState<ExchangeRequest[]>([]);
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -31,49 +42,38 @@ export default function ProfilePage() {
   };
 
   const loadProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .maybeSingle();
+    const { data } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
+    return (data as UserProfile | null) || null;
+  };
 
-    if (error) {
-      console.error("Profile load error:", error.message);
-      return null;
-    }
+  const loadRequests = async (userId: string) => {
+    const { data } = await supabase
+      .from("exchange_requests")
+      .select("id, send_currency, receive_currency, send_amount, receive_amount, status, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(10);
 
-    return data as UserProfile | null;
+    setRequests((data as ExchangeRequest[]) || []);
   };
 
   const syncCurrentUser = async () => {
-    try {
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-      if (error) {
-        console.error("Session error:", error.message);
-        setUser(null);
-        applyProfile(null);
-        return;
-      }
+    const currentUser = session?.user ?? null;
+    setUser(currentUser);
 
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-
-      if (!currentUser) {
-        applyProfile(null);
-        return;
-      }
-
-      const profileData = await loadProfile(currentUser.id);
-      applyProfile(profileData);
-    } catch (error) {
-      console.error("syncCurrentUser error:", error);
-      setUser(null);
+    if (!currentUser) {
       applyProfile(null);
+      setRequests([]);
+      return;
     }
+
+    const profileData = await loadProfile(currentUser.id);
+    applyProfile(profileData);
+    await loadRequests(currentUser.id);
   };
 
   useEffect(() => {
@@ -87,16 +87,16 @@ export default function ProfilePage() {
 
       if (!currentUser) {
         applyProfile(null);
+        setRequests([]);
         return;
       }
 
       const profileData = await loadProfile(currentUser.id);
       applyProfile(profileData);
+      await loadRequests(currentUser.id);
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const saveProfile = async () => {
@@ -109,14 +109,12 @@ export default function ProfilePage() {
     try {
       setSavingProfile(true);
 
-      const payload = {
+      const { error } = await supabase.from("profiles").upsert({
         id: user.id,
         full_name: fullName,
         phone,
         email: user.email,
-      };
-
-      const { error } = await supabase.from("profiles").upsert(payload);
+      });
 
       if (error) {
         setMessage(error.message);
@@ -124,15 +122,14 @@ export default function ProfilePage() {
         return;
       }
 
-      const updatedProfile = {
+      applyProfile({
         id: user.id,
         full_name: fullName,
         phone,
         credits: profile?.credits || 0,
         email: user.email,
-      };
+      });
 
-      applyProfile(updatedProfile);
       setMessage("Profile saved successfully.");
       setMessageType("success");
     } catch (error) {
@@ -148,6 +145,7 @@ export default function ProfilePage() {
     await supabase.auth.signOut();
     setUser(null);
     applyProfile(null);
+    setRequests([]);
     setMessage("You have been logged out.");
     setMessageType("info");
   };
@@ -159,7 +157,7 @@ export default function ProfilePage() {
           <div className="card">
             <h1 className="card-title">Please log in</h1>
             <p className="card-subtitle">
-              You need to log in before viewing your profile and verification details.
+              You need to log in before viewing your profile and exchange requests.
             </p>
 
             <div className="stack top-space">
@@ -220,9 +218,7 @@ export default function ProfilePage() {
 
         <div className="card">
           <h1 className="card-title">Profile</h1>
-          <p className="card-subtitle">
-            Manage your identity, phone number and available credits.
-          </p>
+          <p className="card-subtitle">Manage your identity, phone number and available credits.</p>
 
           <div className="form-stack top-space">
             <label className="input-label">
@@ -239,7 +235,7 @@ export default function ProfilePage() {
               Phone
               <input
                 className="input"
-                placeholder="Local number? Just type 07... and the app will convert it."
+                placeholder="Phone number"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
               />
@@ -247,12 +243,7 @@ export default function ProfilePage() {
 
             <div className="helper-text">Credits Balance: {profile?.credits || 0}</div>
 
-            <button
-              className="btn btn-primary"
-              onClick={saveProfile}
-              disabled={savingProfile}
-              type="button"
-            >
+            <button className="btn btn-primary" onClick={saveProfile} disabled={savingProfile} type="button">
               {savingProfile ? "Saving..." : "Save Profile"}
             </button>
 
@@ -262,30 +253,49 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="card">
+        <div className="card top-space">
+          <h2 className="card-title">My exchange requests</h2>
+
+          {requests.length === 0 ? (
+            <p className="card-subtitle">No exchange requests yet.</p>
+          ) : (
+            <div className="stack top-space">
+              {requests.map((request) => (
+                <div key={request.id} className="info-card">
+                  <h3>
+                    {request.send_amount} {request.send_currency} → {request.receive_amount} {request.receive_currency}
+                  </h3>
+                  <p>Status: {request.status}</p>
+                  <p>{new Date(request.created_at).toLocaleString()}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="card top-space">
           <h2 className="card-title">Verification Status</h2>
           <p className="card-subtitle">
-            Not verified yet. Complete verification in the future to build more buyer
-            trust and qualify for a stronger trader profile.
+            Not verified yet. Complete verification later to build more buyer trust.
           </p>
         </div>
+      </div>
 
-        <div className="nav">
-          <Link href="/">
-            <FiHome />
-            <span>Home</span>
-          </Link>
+      <div className="nav">
+        <Link href="/">
+          <FiHome />
+          <span>Home</span>
+        </Link>
 
-          <Link href="/market">
-            <FiTrendingUp />
-            <span>Market</span>
-          </Link>
+        <Link href="/market">
+          <FiTrendingUp />
+          <span>Market</span>
+        </Link>
 
-          <Link href="/profile" className="active">
-            <FiUser />
-            <span>Profile</span>
-          </Link>
-        </div>
+        <Link href="/profile" className="active">
+          <FiUser />
+          <span>Profile</span>
+        </Link>
       </div>
     </main>
   );

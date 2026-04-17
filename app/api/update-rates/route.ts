@@ -30,18 +30,24 @@ export async function GET() {
       );
     }
 
-    // Different margins for each side of the business
-    const gbpSellMargin = 0.02; // customer sells GBP to you
-    const gbpBuyMargin = 0.04; // customer buys GBP from you
+    const { data: config, error: configError } = await supabase
+      .from("exchange_config")
+      .select("gbp_sell_margin, gbp_buy_margin")
+      .eq("id", 1)
+      .single();
 
-    // GBP -> TZS
-    // customer gives you GBP, you pay them TZS
+    if (configError || !config) {
+      return NextResponse.json(
+        { error: "Could not load exchange config." },
+        { status: 500 }
+      );
+    }
+
+    const gbpSellMargin = Number(config.gbp_sell_margin);
+    const gbpBuyMargin = Number(config.gbp_buy_margin);
+
     const rafikiGbpToTzs = worldRate * (1 - gbpSellMargin);
-
-    // TZS -> GBP
-    // customer gives you TZS, you give them GBP
     const rafikiTzsToGbp = 1 / (worldRate * (1 + gbpBuyMargin));
-
     const now = new Date().toISOString();
 
     const { error: gbpError } = await supabase
@@ -54,54 +60,10 @@ export async function GET() {
       .eq("pair", "GBP_TZS");
 
     if (gbpError) {
-      console.error("GBP_TZS update error:", gbpError);
       return NextResponse.json(
-        {
-          error: "Failed to update GBP_TZS rate.",
-          details: gbpError.message,
-          code: gbpError.code,
-          hint: gbpError.hint,
-        },
+        { error: "Failed to update GBP_TZS rate.", details: gbpError.message },
         { status: 500 }
       );
     }
 
-    const { error: tzsError } = await supabase
-      .from("exchange_rates")
-      .update({
-        base_rate: 1 / worldRate,
-        rafiki_rate: rafikiTzsToGbp,
-        updated_at: now,
-      })
-      .eq("pair", "TZS_GBP");
-
-    if (tzsError) {
-      console.error("TZS_GBP update error:", tzsError);
-      return NextResponse.json(
-        {
-          error: "Failed to update TZS_GBP rate.",
-          details: tzsError.message,
-          code: tzsError.code,
-          hint: tzsError.hint,
-        },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      worldRate,
-      rafikiGbpToTzs,
-      rafikiTzsToGbp,
-      gbpSellMargin,
-      gbpBuyMargin,
-      updatedAt: now,
-    });
-  } catch (error) {
-    console.error("Update rates route error:", error);
-    return NextResponse.json(
-      { error: "Something went wrong while updating rates." },
-      { status: 500 }
-    );
-  }
-}
+   

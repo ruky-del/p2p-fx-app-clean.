@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { FiHome, FiTrendingUp, FiUser } from "react-icons/fi";
 import { supabase } from "@/lib/supabase";
 
@@ -9,10 +10,11 @@ type RateRow = {
   pair: string;
   base_rate: number;
   rafiki_rate: number;
-  updated_at?: string;
 };
 
 export default function ExpressPage() {
+  const router = useRouter();
+
   const [sendCurrency, setSendCurrency] = useState("GBP");
   const [receiveCurrency, setReceiveCurrency] = useState("TZS");
   const [sendAmount, setSendAmount] = useState("1000");
@@ -29,18 +31,16 @@ export default function ExpressPage() {
 
       const { data, error } = await supabase
         .from("exchange_rates")
-        .select("pair, base_rate, rafiki_rate, updated_at")
+        .select("pair, base_rate, rafiki_rate")
         .in("pair", ["GBP_TZS", "TZS_GBP"]);
 
       if (error) {
-        console.error("Exchange rates load error:", error);
         setRateError("Could not load exchange rates.");
         setLoadingRate(false);
         return;
       }
 
       const rows = (data || []) as RateRow[];
-
       const gbpTzs = rows.find((row) => row.pair === "GBP_TZS");
       const tzsGbp = rows.find((row) => row.pair === "TZS_GBP");
 
@@ -59,14 +59,8 @@ export default function ExpressPage() {
   }, []);
 
   const activeRate = useMemo(() => {
-    if (sendCurrency === "GBP" && receiveCurrency === "TZS") {
-      return gbpToTzsRate;
-    }
-
-    if (sendCurrency === "TZS" && receiveCurrency === "GBP") {
-      return tzsToGbpRate;
-    }
-
+    if (sendCurrency === "GBP" && receiveCurrency === "TZS") return gbpToTzsRate;
+    if (sendCurrency === "TZS" && receiveCurrency === "GBP") return tzsToGbpRate;
     return null;
   }, [sendCurrency, receiveCurrency, gbpToTzsRate, tzsToGbpRate]);
 
@@ -74,21 +68,18 @@ export default function ExpressPage() {
     sendCurrency === "GBP" && receiveCurrency === "TZS"
       ? "We buy GBP (you receive TZS)"
       : sendCurrency === "TZS" && receiveCurrency === "GBP"
-      ? "We sell GBP (you pay TZS)"
+      ? "We sell GBP (you receive GBP)"
       : "Exchange";
 
   const estimatedReceive = useMemo(() => {
     const amount = Number(sendAmount);
-
     if (!amount || !activeRate) return 0;
-
     return amount * activeRate;
   }, [sendAmount, activeRate]);
 
   const swapCurrencies = () => {
     const oldSend = sendCurrency;
     const oldReceive = receiveCurrency;
-
     setSendCurrency(oldReceive);
     setReceiveCurrency(oldSend);
     setSendAmount("");
@@ -96,12 +87,21 @@ export default function ExpressPage() {
 
   const formatValue = (value: number, currency: string) => {
     if (!value) return `0 ${currency}`;
-
-    if (currency === "TZS") {
-      return `${value.toLocaleString()} TZS`;
-    }
-
+    if (currency === "TZS") return `${value.toLocaleString()} TZS`;
     return `${value.toFixed(6)} GBP`;
+  };
+
+  const handleContinue = () => {
+    const params = new URLSearchParams({
+      sendCurrency,
+      receiveCurrency,
+      sendAmount,
+      receiveAmount: String(estimatedReceive),
+      rateUsed: String(activeRate || 0),
+      tradeLabel,
+    });
+
+    router.push(`/exchange?${params.toString()}`);
   };
 
   return (
@@ -178,13 +178,7 @@ export default function ExpressPage() {
                   : "--"}
               </div>
 
-              <button
-                className="button top-space"
-                type="button"
-                onClick={() => {
-                  window.location.href = "/profile";
-                }}
-              >
+              <button className="button top-space" type="button" onClick={handleContinue}>
                 Continue to Exchange
               </button>
             </>
