@@ -270,7 +270,7 @@ export default function HomePage() {
     const { error } = await supabase.auth.signInWithOtp({
       email: authEmail.trim(),
       options: {
-        emailRedirectTo: `${window.location.origin}/`,
+emailRedirectTo: `${window.location.origin}/`,
       },
     });
 
@@ -328,14 +328,10 @@ export default function HomePage() {
     setMessageType("success");
 
     setTimeout(() => {
-      if (next) {
-        window.location.href = next;
-      } else {
-        window.location.href = "/profile";
-      }
+      window.location.href = next || "/profile";
     }, 500);
   } catch (error) {
-    console.error(error);
+    console.error("verify code error:", error);
     setMessage("We could not verify your code. Please try again.");
     setMessageType("warn");
   } finally {

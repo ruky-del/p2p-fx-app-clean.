@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { FiHome, FiTrendingUp, FiUser } from "react-icons/fi";
 import { supabase } from "@/lib/supabase";
 
@@ -16,6 +16,8 @@ type UserProfile = {
 
 export default function ExchangePage() {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const nextUrl = `${pathname}?${searchParams.toString()}`;
 
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -37,29 +39,34 @@ export default function ExchangePage() {
 
   useEffect(() => {
     const syncCurrentUser = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
 
-      if (!currentUser) {
+        if (!currentUser) {
+          setLoadingUser(false);
+          return;
+        }
+
+        const { data } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", currentUser.id)
+          .maybeSingle();
+
+        const profileData = (data as UserProfile | null) || null;
+        setProfile(profileData);
+        setFullName(profileData?.full_name || "");
+        setPhone(profileData?.phone || "");
+      } catch (error) {
+        console.error("exchange page user sync error:", error);
+      } finally {
         setLoadingUser(false);
-        return;
       }
-
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", currentUser.id)
-        .maybeSingle();
-
-      const profileData = (data as UserProfile | null) || null;
-      setProfile(profileData);
-      setFullName(profileData?.full_name || "");
-      setPhone(profileData?.phone || "");
-      setLoadingUser(false);
     };
 
     syncCurrentUser();
@@ -67,9 +74,23 @@ export default function ExchangePage() {
 
   const formattedReceive = useMemo(() => {
     if (!receiveAmount) return `0 ${receiveCurrency}`;
-    if (receiveCurrency === "TZS") return `${receiveAmount.toLocaleString()} TZS`;
+
+    if (receiveCurrency === "TZS") {
+      return `${receiveAmount.toLocaleString()} TZS`;
+    }
+
     return `${receiveAmount.toFixed(6)} GBP`;
   }, [receiveAmount, receiveCurrency]);
+
+  const formattedRate = useMemo(() => {
+    if (!rateUsed) return "--";
+
+    if (sendCurrency === "GBP") {
+      return `1 GBP = ${rateUsed.toLocaleString()} TZS`;
+    }
+
+    return `1 TZS = ${rateUsed.toFixed(6)} GBP`;
+  }, [rateUsed, sendCurrency]);
 
   const saveAndSubmit = async () => {
     if (!user) {
@@ -84,47 +105,66 @@ export default function ExchangePage() {
       return;
     }
 
+    if (!sendAmount || !receiveAmount || !rateUsed) {
+      setMessage("Exchange details are incomplete. Please go back and try again.");
+      setMessageType("warn");
+      return;
+    }
+
     try {
       setSubmitting(true);
+      setMessage("");
 
-      const { error: profileError } = await supabase.from("profiles").upsert({
+      const profilePayload = {
         id: user.id,
-        full_name: fullName,
-        phone,
+        full_name: fullName.trim(),
+        phone: phone.trim(),
         email: user.email,
-      });
+      };
+
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert(profilePayload, { onConflict: "id" });
 
       if (profileError) {
-        setMessage(profileError.message);
+        setMessage(profileError.message || "Could not save your profile.");
         setMessageType("warn");
         return;
       }
 
       const { error: requestError } = await supabase.from("exchange_requests").insert({
         user_id: user.id,
-        full_name: fullName,
-        phone,
+        full_name: fullName.trim(),
+        phone: phone.trim(),
         send_currency: sendCurrency,
         receive_currency: receiveCurrency,
         send_amount: sendAmount,
         receive_amount: receiveAmount,
         rate_used: rateUsed,
         trade_label: tradeLabel,
-        notes,
+        notes: notes.trim(),
         status: "pending",
       });
 
       if (requestError) {
-        setMessage(requestError.message);
+        setMessage(requestError.message || "Could not submit exchange request.");
         setMessageType("warn");
         return;
       }
 
+      setProfile({
+        id: user.id,
+        full_name: fullName.trim(),
+        phone: phone.trim(),
+        credits: profile?.credits || 0,
+        email: user.email,
+      });
+
+      setNotes("");
       setMessage("Exchange request submitted successfully.");
       setMessageType("success");
-      setNotes("");
     } catch (error) {
-      console.error(error);
+      console.error("exchange submit error:", error);
       setMessage("Something went wrong while submitting your exchange request.");
       setMessageType("warn");
     } finally {
@@ -138,7 +178,9 @@ export default function ExchangePage() {
         <div className="container">
           <div className="card">
             <h1 className="card-title">Loading...</h1>
-            <p className="card-subtitle">Please wait while we prepare your exchange form.</p>
+            <p className="card-subtitle">
+              Please wait while we prepare your exchange form.
+            </p>
           </div>
         </div>
       </main>
@@ -157,18 +199,39 @@ export default function ExchangePage() {
 
             <div className="stack top-space">
               <Link
-  href={`/?login=1&next=${encodeURIComponent(window.location.pathname + window.location.search)}`}
-  className="btn btn-primary"
-  style={{ textAlign: "center" }}
->
-  Log in / Create account
-</Link>
+                href={`/?login=1&next=${encodeURIComponent(nextUrl)}`}
+                className="btn btn-primary"
+                style={{ textAlign: "center" }}
+              >
+                Log in / Create account
+              </Link>
 
-              <Link href="/express" className="btn btn-outline" style={{ textAlign: "center" }}>
+              <Link
+                href="/express"
+                className="btn btn-outline"
+                style={{ textAlign: "center" }}
+              >
                 Back to Express
               </Link>
             </div>
           </div>
+        </div>
+
+        <div className="nav">
+          <Link href="/">
+            <FiHome />
+            <span>Home</span>
+          </Link>
+
+          <Link href="/market" className="active">
+            <FiTrendingUp />
+            <span>Market</span>
+          </Link>
+
+          <Link href="/profile">
+            <FiUser />
+            <span>Profile</span>
+          </Link>
         </div>
       </main>
     );
@@ -203,14 +266,11 @@ export default function ExchangePage() {
           <p className="card-subtitle">{tradeLabel}</p>
 
           <div className="stack top-space">
-            <div className="helper-text">You send: {sendAmount} {sendCurrency}</div>
-            <div className="helper-text">You receive: {formattedReceive}</div>
             <div className="helper-text">
-              Rate used:{" "}
-              {sendCurrency === "GBP"
-                ? `1 GBP = ${rateUsed.toLocaleString()} TZS`
-                : `1 TZS = ${rateUsed.toFixed(6)} GBP`}
+              You send: {sendAmount} {sendCurrency}
             </div>
+            <div className="helper-text">You receive: {formattedReceive}</div>
+            <div className="helper-text">Rate used: {formattedRate}</div>
           </div>
         </div>
 
@@ -249,17 +309,15 @@ export default function ExchangePage() {
               />
             </label>
 
-            <button className="btn btn-primary" type="button" onClick={saveAndSubmit} disabled={submitting}>
+            <button
+              className="btn btn-primary"
+              type="button"
+              onClick={saveAndSubmit}
+              disabled={submitting}
+            >
               {submitting ? "Submitting..." : "Submit Exchange Request"}
             </button>
           </div>
-        </div>
-
-        <div className="card top-space">
-          <h2 className="card-title">My recent requests</h2>
-          <p className="card-subtitle">
-            Your request has been saved to Supabase and can now be reviewed later.
-          </p>
         </div>
       </div>
 

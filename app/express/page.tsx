@@ -108,10 +108,23 @@ export default function ExpressPage() {
     <main className="page">
       <div className="container">
         <div className="card">
-  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
-    <h1 className="card-title" style={{ margin: 0 }}>⚡ Express Exchange</h1>
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: "12px",
+    }}
+  >
+    <h1 className="card-title" style={{ margin: 0 }}>
+      ⚡ Express Exchange
+    </h1>
 
-    <Link href="/market" className="btn btn-outline" style={{ width: "auto", textAlign: "center", padding: "8px 14px" }}>
+    <Link
+      href="/market"
+      className="btn btn-outline"
+      style={{ width: "auto", textAlign: "center", padding: "8px 14px" }}
+    >
       Back to P2P
     </Link>
   </div>
