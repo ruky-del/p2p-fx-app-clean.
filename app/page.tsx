@@ -270,7 +270,7 @@ export default function HomePage() {
     const { error } = await supabase.auth.signInWithOtp({
       email: authEmail.trim(),
       options: {
-        emailRedirectTo: `${window.location.origin}/profile`,
+        emailRedirectTo: `${window.location.origin}/`,
       },
     });
 
@@ -294,43 +294,54 @@ export default function HomePage() {
 };
 
   const handleVerifyCode = async () => {
-    if (!authEmail.trim() || !authCode.trim()) {
-      setMessage("Please enter both your email address and the login code.");
+  if (!authEmail.trim() || !authCode.trim()) {
+    setMessage("Please enter both your email address and the login code.");
+    setMessageType("warn");
+    return;
+  }
+
+  try {
+    setAuthLoading(true);
+
+    const { error } = await supabase.auth.verifyOtp({
+      email: authEmail.trim(),
+      token: authCode.trim(),
+      type: "email",
+    });
+
+    if (error) {
+      setMessage("The code is invalid or has expired. Please request a new one.");
       setMessageType("warn");
       return;
     }
 
-    try {
-      setAuthLoading(true);
+    await syncCurrentUser();
 
-      const { error } = await supabase.auth.verifyOtp({
-        email: authEmail.trim(),
-        token: authCode.trim(),
-        type: "email",
-      });
+    setAuthStep("email");
+    setAuthCode("");
+    setAuthEmail("");
 
-      if (error) {
-        setMessage("The code is invalid or has expired. Please request a new one.");
-        setMessageType("warn");
-        return;
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next");
+
+    setMessage("Login successful.");
+    setMessageType("success");
+
+    setTimeout(() => {
+      if (next) {
+        window.location.href = next;
+      } else {
+        window.location.href = "/profile";
       }
-
-      await syncCurrentUser();
-
-      setAuthStep("email");
-      setAuthCode("");
-      setAuthEmail("");
-
-      setMessage("Login successful.");
-      setMessageType("success");
-    } catch (error) {
-      console.error(error);
-      setMessage("We could not verify your code. Please try again.");
-      setMessageType("warn");
-    } finally {
-      setAuthLoading(false);
-    }
-  };
+    }, 500);
+  } catch (error) {
+    console.error(error);
+    setMessage("We could not verify your code. Please try again.");
+    setMessageType("warn");
+  } finally {
+    setAuthLoading(false);
+  }
+};
 
   const logout = async () => {
     await supabase.auth.signOut();

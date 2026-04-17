@@ -100,46 +100,41 @@ export default function ProfilePage() {
   }, []);
 
   const saveProfile = async () => {
-    if (!user) {
-      setMessage("Please log in first before updating your profile.");
-      setMessageType("warn");
+  if (!user) return;
+
+  try {
+    setSavingProfile(true);
+
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Request timeout")), 10000)
+    );
+
+    const request = supabase
+      .from("profiles")
+      .upsert({
+        id: user.id,
+        full_name: fullName,
+        phone: phone,
+        email: user.email,
+      });
+
+    const { error } = await Promise.race([
+      request,
+      timeout,
+    ]) as any;
+
+    if (error) {
+      alert(error.message);
       return;
     }
 
-    try {
-      setSavingProfile(true);
-
-      const { error } = await supabase.from("profiles").upsert({
-        id: user.id,
-        full_name: fullName,
-        phone,
-        email: user.email,
-      });
-
-      if (error) {
-        setMessage(error.message);
-        setMessageType("warn");
-        return;
-      }
-
-      applyProfile({
-        id: user.id,
-        full_name: fullName,
-        phone,
-        credits: profile?.credits || 0,
-        email: user.email,
-      });
-
-      setMessage("Profile saved successfully.");
-      setMessageType("success");
-    } catch (error) {
-      console.error(error);
-      setMessage("We could not save your profile. Please try again.");
-      setMessageType("warn");
-    } finally {
-      setSavingProfile(false);
-    }
-  };
+    alert("Profile saved successfully.");
+  } catch (err: any) {
+    alert(err.message || "Could not save profile.");
+  } finally {
+    setSavingProfile(false);
+  }
+};
 
   const logout = async () => {
     await supabase.auth.signOut();
