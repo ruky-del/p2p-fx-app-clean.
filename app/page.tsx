@@ -250,7 +250,7 @@ export default function HomePage() {
     }
   };
 
-  const handleSendCode = async () => {
+ const handleSendCode = async () => {
   if (!authEmail.trim()) {
     setMessage("Please enter your email address.");
     setMessageType("warn");
@@ -270,12 +270,16 @@ export default function HomePage() {
     const { error } = await supabase.auth.signInWithOtp({
       email: authEmail.trim(),
       options: {
-emailRedirectTo: `${window.location.origin}/`,
+        emailRedirectTo: `${window.location.origin}/`,
       },
     });
 
     if (error) {
-      setMessage(error.message);
+      setMessage(
+        error.message === "email rate limit exceeded"
+          ? "Too many login requests were made. Please wait a short moment and try again."
+          : error.message
+      );
       setMessageType("warn");
       return;
     }
@@ -317,21 +321,25 @@ emailRedirectTo: `${window.location.origin}/`,
 
     await syncCurrentUser();
 
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next");
+
     setAuthStep("email");
     setAuthCode("");
     setAuthEmail("");
-
-    const params = new URLSearchParams(window.location.search);
-    const next = params.get("next");
 
     setMessage("Login successful.");
     setMessageType("success");
 
     setTimeout(() => {
-      window.location.href = next || "/profile";
-    }, 500);
+      if (next) {
+        window.location.href = next;
+      } else {
+        window.location.href = "/profile";
+      }
+    }, 400);
   } catch (error) {
-    console.error("verify code error:", error);
+    console.error("Verify code error:", error);
     setMessage("We could not verify your code. Please try again.");
     setMessageType("warn");
   } finally {

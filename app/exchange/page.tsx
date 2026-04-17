@@ -199,12 +199,12 @@ export default function ExchangePage() {
 
             <div className="stack top-space">
               <Link
-                href={`/?login=1&next=${encodeURIComponent(nextUrl)}`}
-                className="btn btn-primary"
-                style={{ textAlign: "center" }}
-              >
-                Log in / Create account
-              </Link>
+  href={`/?login=1&next=${encodeURIComponent(nextUrl)}`}
+  className="btn btn-primary"
+  style={{ textAlign: "center" }}
+>
+  Log in / Create account
+</Link>
 
               <Link
                 href="/express"
