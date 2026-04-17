@@ -108,10 +108,17 @@ export default function ExpressPage() {
     <main className="page">
       <div className="container">
         <div className="card">
-          <h1 className="card-title">⚡ Express Exchange</h1>
-          <p className="card-subtitle">
-            Quick estimate for direct exchange between Tanzania and the UK.
-          </p>
+  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+    <h1 className="card-title" style={{ margin: 0 }}>⚡ Express Exchange</h1>
+
+    <Link href="/market" className="btn btn-outline" style={{ width: "auto", textAlign: "center", padding: "8px 14px" }}>
+      Back to P2P
+    </Link>
+  </div>
+
+  <p className="card-subtitle" style={{ marginTop: "10px" }}>
+    Quick estimate for direct exchange between Tanzania and the UK.
+  </p>
 
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "12px" }}>
             <button
