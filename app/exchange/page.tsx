@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { FiHome, FiTrendingUp, FiUser } from "react-icons/fi";
 import { supabase } from "@/lib/supabase";
@@ -14,7 +14,7 @@ type UserProfile = {
   email?: string | null;
 };
 
-export default function ExchangePage() {
+function ExchangeContent() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const nextUrl = `${pathname}?${searchParams.toString()}`;
@@ -199,12 +199,12 @@ export default function ExchangePage() {
 
             <div className="stack top-space">
               <Link
-  href={`/?login=1&next=${encodeURIComponent(nextUrl)}`}
-  className="btn btn-primary"
-  style={{ textAlign: "center" }}
->
-  Log in / Create account
-</Link>
+                href={`/?login=1&next=${encodeURIComponent(nextUrl)}`}
+                className="btn btn-primary"
+                style={{ textAlign: "center" }}
+              >
+                Log in / Create account
+              </Link>
 
               <Link
                 href="/express"
@@ -241,21 +241,9 @@ export default function ExchangePage() {
     <main className="page">
       <div className="container">
         {message && (
-          <div
-            className={`card ${
-              messageType === "success"
-                ? "message-success"
-                : messageType === "warn"
-                ? "message-warn"
-                : ""
-            }`}
-          >
+          <div className={`card ${messageType === "success" ? "message-success" : messageType === "warn" ? "message-warn" : ""}`}>
             <h2 className="card-title">
-              {messageType === "success"
-                ? "Success"
-                : messageType === "warn"
-                ? "Notice"
-                : "Update"}
+              {messageType === "success" ? "Success" : messageType === "warn" ? "Notice" : "Update"}
             </h2>
             <p className="card-subtitle">{message}</p>
           </div>
@@ -280,41 +268,20 @@ export default function ExchangePage() {
           <div className="form-stack top-space">
             <label className="input-label">
               Full name
-              <input
-                className="input"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Enter your full name"
-              />
+              <input className="input" value={fullName} onChange={(e) => setFullName(e.target.value)} />
             </label>
 
             <label className="input-label">
               Phone number
-              <input
-                className="input"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Enter your phone number"
-              />
+              <input className="input" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </label>
 
             <label className="input-label">
               Notes
-              <textarea
-                className="input"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Optional notes about your exchange"
-                rows={4}
-              />
+              <textarea className="input" value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} />
             </label>
 
-            <button
-              className="btn btn-primary"
-              type="button"
-              onClick={saveAndSubmit}
-              disabled={submitting}
-            >
+            <button className="btn btn-primary" onClick={saveAndSubmit} disabled={submitting}>
               {submitting ? "Submitting..." : "Submit Exchange Request"}
             </button>
           </div>
@@ -338,5 +305,13 @@ export default function ExchangePage() {
         </Link>
       </div>
     </main>
+  );
+}
+
+export default function ExchangePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ExchangeContent />
+    </Suspense>
   );
 }
