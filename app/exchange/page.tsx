@@ -74,21 +74,17 @@ function ExchangeContent() {
 
   const formattedReceive = useMemo(() => {
     if (!receiveAmount) return `0 ${receiveCurrency}`;
-
     if (receiveCurrency === "TZS") {
       return `${receiveAmount.toLocaleString()} TZS`;
     }
-
     return `${receiveAmount.toFixed(6)} GBP`;
   }, [receiveAmount, receiveCurrency]);
 
   const formattedRate = useMemo(() => {
     if (!rateUsed) return "--";
-
     if (sendCurrency === "GBP") {
       return `1 GBP = ${rateUsed.toLocaleString()} TZS`;
     }
-
     return `1 TZS = ${rateUsed.toFixed(6)} GBP`;
   }, [rateUsed, sendCurrency]);
 
@@ -106,7 +102,7 @@ function ExchangeContent() {
     }
 
     if (!sendAmount || !receiveAmount || !rateUsed) {
-      setMessage("Exchange details are incomplete. Please go back and try again.");
+      setMessage("Exchange details are incomplete.");
       setMessageType("warn");
       return;
     }
@@ -115,24 +111,14 @@ function ExchangeContent() {
       setSubmitting(true);
       setMessage("");
 
-      const profilePayload = {
+      await supabase.from("profiles").upsert({
         id: user.id,
         full_name: fullName.trim(),
         phone: phone.trim(),
         email: user.email,
-      };
+      });
 
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .upsert(profilePayload, { onConflict: "id" });
-
-      if (profileError) {
-        setMessage(profileError.message || "Could not save your profile.");
-        setMessageType("warn");
-        return;
-      }
-
-      const { error: requestError } = await supabase.from("exchange_requests").insert({
+      await supabase.from("exchange_requests").insert({
         user_id: user.id,
         full_name: fullName.trim(),
         phone: phone.trim(),
@@ -146,26 +132,12 @@ function ExchangeContent() {
         status: "pending",
       });
 
-      if (requestError) {
-        setMessage(requestError.message || "Could not submit exchange request.");
-        setMessageType("warn");
-        return;
-      }
-
-      setProfile({
-        id: user.id,
-        full_name: fullName.trim(),
-        phone: phone.trim(),
-        credits: profile?.credits || 0,
-        email: user.email,
-      });
-
       setNotes("");
       setMessage("Exchange request submitted successfully.");
       setMessageType("success");
     } catch (error) {
-      console.error("exchange submit error:", error);
-      setMessage("Something went wrong while submitting your exchange request.");
+      console.error(error);
+      setMessage("Something went wrong.");
       setMessageType("warn");
     } finally {
       setSubmitting(false);
@@ -173,158 +145,38 @@ function ExchangeContent() {
   };
 
   if (loadingUser) {
-    return (
-      <main className="page">
-        <div className="container">
-          <div className="card">
-            <h1 className="card-title">Loading...</h1>
-            <p className="card-subtitle">
-              Please wait while we prepare your exchange form.
-            </p>
-          </div>
-        </div>
-      </main>
-    );
+    return <div>Loading...</div>;
   }
 
   if (!user) {
     return (
-      <main className="page">
-        <div className="container">
-          <div className="card">
-            <h1 className="card-title">Please log in</h1>
-            <p className="card-subtitle">
-              You need to log in before continuing with your exchange request.
-            </p>
-
-            <div className="stack top-space">
-              <Link
-                href={`/?login=1&next=${encodeURIComponent(nextUrl)}`}
-                className="btn btn-primary"
-                style={{ textAlign: "center" }}
-              >
-                Log in / Create account
-              </Link>
-
-              <Link
-                href="/express"
-                className="btn btn-outline"
-                style={{ textAlign: "center" }}
-              >
-                Back to Express
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        <div className="nav">
-          <Link href="/">
-            <FiHome />
-            <span>Home</span>
-          </Link>
-
-          <Link href="/market" className="active">
-            <FiTrendingUp />
-            <span>Market</span>
-          </Link>
-
-          <Link href="/profile">
-            <FiUser />
-            <span>Profile</span>
-          </Link>
-        </div>
-      </main>
+      <div>
+        <p>Please log in</p>
+        <Link href={`/?login=1&next=${encodeURIComponent(nextUrl)}`}>
+          Login
+        </Link>
+      </div>
     );
   }
 
   return (
-    <main className="page">
-      <div className="container">
-        {message && (
-          <div className={`card ${messageType === "success" ? "message-success" : messageType === "warn" ? "message-warn" : ""}`}>
-            <h2 className="card-title">
-              {messageType === "success" ? "Success" : messageType === "warn" ? "Notice" : "Update"}
-            </h2>
-            <p className="card-subtitle">{message}</p>
-          </div>
-        )}
+    <div>
+      <h1>Exchange</h1>
+      <p>You send: {sendAmount} {sendCurrency}</p>
+      <p>You receive: {formattedReceive}</p>
 
-        <div className="card">
-          <h1 className="card-title">Exchange Request</h1>
-          <p className="card-subtitle">{tradeLabel}</p>
+      <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" />
+      <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" />
+      <textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
 
-          <div className="stack top-space">
-            <div className="helper-text">
-              You send: {sendAmount} {sendCurrency}
-            </div>
-            <div className="helper-text">You receive: {formattedReceive}</div>
-            <div className="helper-text">Rate used: {formattedRate}</div>
-          </div>
-        </div>
+      <button onClick={saveAndSubmit}>
+        {submitting ? "Submitting..." : "Submit"}
+      </button>
 
-        <div className="card top-space">
-          <h2 className="card-title">Your details</h2>
-
-          <div className="form-stack top-space">
-            <label className="input-label">
-              Full name
-              <input className="input" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-            </label>
-
-            <label className="input-label">
-              Phone number
-              <input className="input" value={phone} onChange={(e) => setPhone(e.target.value)} />
-            </label>
-
-            <label className="input-label">
-              Notes
-              <textarea className="input" value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} />
-            </label>
-
-            <button className="btn btn-primary" onClick={saveAndSubmit} disabled={submitting}>
-              {submitting ? "Submitting..." : "Submit Exchange Request"}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="nav">
-        <Link href="/">
-          <FiHome />
-          <span>Home</span>
-        </Link>
-
-        <Link href="/market" className="active">
-          <FiTrendingUp />
-          <span>Market</span>
-        </Link>
-
-        <Link href="/profile">
-          <FiUser />
-          <span>Profile</span>
-        </Link>
-      </div>
-    </main>
+      {message && <p>{message}</p>}
+    </div>
   );
 }
-
-function ExchangeContent() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <ExchangeContent />
-    </Suspense>
-  );
-}
-import { Suspense } from "react";
-
-function ExchangeContent() {
-  return (
-    <Suspense fallback={<div className="page"><div className="container"><div className="card">Loading...</div></div></div>}>
-      <ExchangeContent />
-    </Suspense>
-  );
-}
-import { Suspense } from "react";
 
 export default function ExchangePage() {
   return (
