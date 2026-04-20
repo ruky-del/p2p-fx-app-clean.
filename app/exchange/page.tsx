@@ -317,9 +317,18 @@ function ExchangeContent() {
 }
 import { Suspense } from "react";
 
-export default function ExchangePage() {
+function ExchangeContent() {
   return (
     <Suspense fallback={<div className="page"><div className="container"><div className="card">Loading...</div></div></div>}>
+      <ExchangeContent />
+    </Suspense>
+  );
+}
+import { Suspense } from "react";
+
+export default function ExchangePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
       <ExchangeContent />
     </Suspense>
   );
