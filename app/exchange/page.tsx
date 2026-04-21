@@ -79,5 +79,12 @@ const formattedReceive = useMemo(() => {
     return `${receiveAmount.toLocaleString()} TZS`;
   }
 
+  const formattedReceive = useMemo(() => {
+  if (!receiveAmount) return `0 ${receiveCurrency}`;
+
+  if (receiveCurrency === "TZS") {
+    return `${receiveAmount.toLocaleString()} TZS`;
+  }
+
   return `${receiveAmount.toFixed(6)} GBP`;
 }, [receiveAmount, receiveCurrency]);
