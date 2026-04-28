@@ -251,36 +251,26 @@ export default function HomePage() {
   };
 
  const handleSendCode = async () => {
-  if (!authEmail.trim()) {
-    setMessage("Please enter your email address.");
-    setMessageType("warn");
-    return;
-  }
+  if (!authEmail.trim()) return;
 
   try {
     setAuthLoading(true);
-    setMessage("");
 
     const { error } = await supabase.auth.signInWithOtp({
-      email: authEmail.trim(),
+      email: authEmail,
       options: {
-        emailRedirectTo: `${window.location.origin}/`,
+        emailRedirectTo: window.location.origin,
       },
     });
 
     if (error) {
-      setMessage(error.message);
-      setMessageType("warn");
+      alert(error.message);
       return;
     }
 
-    setAuthStep("code");
-    setCooldown(30);
-    setMessage("Check your email for your login code.");
-    setMessageType("info");
-  } catch (error: any) {
-    setMessage(error?.message || "Could not send login code.");
-    setMessageType("warn");
+    alert("Check your email to login (magic link)");
+  } catch (e) {
+    console.error(e);
   } finally {
     setAuthLoading(false);
   }

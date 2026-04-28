@@ -23,6 +23,15 @@ type ExchangeRequest = {
   created_at: string;
 };
 
+const withTimeout = async <T,>(promise: Promise<T>, ms = 8000): Promise<T> => {
+  return await Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error("Request timeout")), ms)
+    ),
+  ]);
+};
+
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -42,94 +51,18 @@ export default function ProfilePage() {
     setPhone(data?.phone || "");
   };
 
-  const loadProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (error) {
-        console.error("loadProfile error:", error);
-        return null;
-      }
-
-      return (data as UserProfile | null) || null;
-    } catch (error) {
-      console.error("loadProfile catch error:", error);
-      return null;
-    }
-  };
-
-  const loadRequests = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("exchange_requests")
-        .select("id, send_currency, receive_currency, send_amount, receive_amount, status, created_at")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (error) {
-        console.error("loadRequests error:", error);
-        setRequests([]);
-        return;
-      }
-
-      setRequests((data as ExchangeRequest[]) || []);
-    } catch (error) {
-      console.error("loadRequests catch error:", error);
-      setRequests([]);
-    }
-  };
-
-  const syncCurrentUser = async () => {
-    try {
-      setLoadingPage(true);
-
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession();
-
-      if (error) {
-        console.error("getSession error:", error);
-        setUser(null);
-        applyProfile(null);
-        setRequests([]);
-        return;
-      }
-
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-
-      if (!currentUser) {
-        applyProfile(null);
-        setRequests([]);
-        return;
-      }
-
-      const profileData = await loadProfile(currentUser.id);
-      applyProfile(profileData);
-      await loadRequests(currentUser.id);
-    } catch (error) {
-      console.error("syncCurrentUser error:", error);
-      setUser(null);
-      applyProfile(null);
-      setRequests([]);
-    } finally {
-      setLoadingPage(false);
-    }
-  };
-
   useEffect(() => {
-    syncCurrentUser();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const loadPage = async () => {
       try {
+        setLoadingPage(true);
+
+        const {
+          data: { session },
+          error: sessionError,
+        } = await withTimeout(supabase.auth.getSession(), 8000);
+
+        if (sessionError) throw sessionError;
+
         const currentUser = session?.user ?? null;
         setUser(currentUser);
 
@@ -139,15 +72,38 @@ export default function ProfilePage() {
           return;
         }
 
-        const profileData = await loadProfile(currentUser.id);
-        applyProfile(profileData);
-        await loadRequests(currentUser.id);
-      } catch (error) {
-        console.error("auth state change error:", error);
-      }
-    });
+        const { data: profileData } = await withTimeout(
+          supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", currentUser.id)
+            .maybeSingle(),
+          8000
+        );
 
-    return () => subscription.unsubscribe();
+        applyProfile((profileData as UserProfile | null) || null);
+
+        const { data: requestData } = await withTimeout(
+          supabase
+            .from("exchange_requests")
+            .select("id, send_currency, receive_currency, send_amount, receive_amount, status, created_at")
+            .eq("user_id", currentUser.id)
+            .order("created_at", { ascending: false })
+            .limit(10),
+          8000
+        );
+
+        setRequests((requestData as ExchangeRequest[]) || []);
+      } catch (error) {
+        console.error("profile load error:", error);
+        setMessage("Could not load profile. Please refresh.");
+        setMessageType("warn");
+      } finally {
+        setLoadingPage(false);
+      }
+    };
+
+    loadPage();
   }, []);
 
   const saveProfile = async () => {
@@ -168,21 +124,13 @@ export default function ProfilePage() {
         email: user.email,
       };
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Request timeout. Please try again.")), 10000)
+      const { error } = await withTimeout(
+        supabase.from("profiles").upsert(payload, { onConflict: "id" }),
+        8000
       );
 
-      const requestPromise = supabase
-        .from("profiles")
-        .upsert(payload, { onConflict: "id" });
-
-      const result = (await Promise.race([requestPromise, timeoutPromise])) as {
-        data?: any;
-        error?: { message?: string } | null;
-      };
-
-      if (result?.error) {
-        setMessage(result.error.message || "Could not save profile.");
+      if (error) {
+        setMessage(error.message || "Could not save profile.");
         setMessageType("warn");
         return;
       }
@@ -198,7 +146,6 @@ export default function ProfilePage() {
       setMessage("Profile saved successfully.");
       setMessageType("success");
     } catch (error: any) {
-      console.error("saveProfile error:", error);
       setMessage(error?.message || "Could not save profile.");
       setMessageType("warn");
     } finally {
@@ -207,18 +154,12 @@ export default function ProfilePage() {
   };
 
   const logout = async () => {
-    try {
-      await supabase.auth.signOut();
-      setUser(null);
-      applyProfile(null);
-      setRequests([]);
-      setMessage("You have been logged out.");
-      setMessageType("info");
-    } catch (error) {
-      console.error("logout error:", error);
-      setMessage("Could not log out. Please try again.");
-      setMessageType("warn");
-    }
+    await supabase.auth.signOut();
+    setUser(null);
+    applyProfile(null);
+    setRequests([]);
+    setMessage("You have been logged out.");
+    setMessageType("info");
   };
 
   if (loadingPage) {
@@ -228,23 +169,6 @@ export default function ProfilePage() {
           <div className="card">
             <h1 className="card-title">Loading...</h1>
             <p className="card-subtitle">Please wait while we load your profile.</p>
-          </div>
-
-          <div className="nav">
-            <Link href="/">
-              <FiHome />
-              <span>Home</span>
-            </Link>
-
-            <Link href="/market">
-              <FiTrendingUp />
-              <span>Market</span>
-            </Link>
-
-            <Link href="/profile" className="active">
-              <FiUser />
-              <span>Profile</span>
-            </Link>
           </div>
         </div>
       </main>
@@ -258,7 +182,7 @@ export default function ProfilePage() {
           <div className="card">
             <h1 className="card-title">Please log in</h1>
             <p className="card-subtitle">
-              You need to log in before viewing your profile and exchange requests.
+              You need to log in before viewing your profile.
             </p>
 
             <div className="stack top-space">
@@ -270,23 +194,6 @@ export default function ProfilePage() {
                 Continue to Express Exchange
               </Link>
             </div>
-          </div>
-
-          <div className="nav">
-            <Link href="/">
-              <FiHome />
-              <span>Home</span>
-            </Link>
-
-            <Link href="/market">
-              <FiTrendingUp />
-              <span>Market</span>
-            </Link>
-
-            <Link href="/profile" className="active">
-              <FiUser />
-              <span>Profile</span>
-            </Link>
           </div>
         </div>
       </main>
@@ -307,11 +214,7 @@ export default function ProfilePage() {
             }`}
           >
             <h2 className="card-title">
-              {messageType === "success"
-                ? "Success"
-                : messageType === "warn"
-                ? "Notice"
-                : "Update"}
+              {messageType === "success" ? "Success" : messageType === "warn" ? "Notice" : "Update"}
             </h2>
             <p className="card-subtitle">{message}</p>
           </div>
@@ -346,12 +249,7 @@ export default function ProfilePage() {
 
             <div className="helper-text">Credits Balance: {profile?.credits || 0}</div>
 
-            <button
-              className="btn btn-primary"
-              onClick={saveProfile}
-              disabled={savingProfile}
-              type="button"
-            >
+            <button className="btn btn-primary" onClick={saveProfile} disabled={savingProfile} type="button">
               {savingProfile ? "Saving..." : "Save Profile"}
             </button>
 
@@ -371,11 +269,14 @@ export default function ProfilePage() {
               {requests.map((request) => (
                 <div key={request.id} className="info-card">
                   <h3>
-                    {request.send_amount} {request.send_currency} → {request.receive_amount}{" "}
-                    {request.receive_currency}
+                    {request.send_amount} {request.send_currency} →{" "}
+                    {Number(request.receive_amount).toLocaleString()} {request.receive_currency}
                   </h3>
                   <p>Status: {request.status}</p>
                   <p>{new Date(request.created_at).toLocaleString()}</p>
+                  <Link href={`/trades/${request.id}`} className="btn btn-outline">
+                    Open Trade
+                  </Link>
                 </div>
               ))}
             </div>
