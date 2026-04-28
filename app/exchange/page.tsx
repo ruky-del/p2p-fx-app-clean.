@@ -129,33 +129,26 @@ function ExchangeContent() {
       }
 
       const { data, error } = await supabase
-        .from("exchange_requests")
-        .insert({
-          user_id: user.id,
-          full_name: fullName.trim(),
-          phone: phone.trim(),
-          send_currency: sendCurrency,
-          receive_currency: receiveCurrency,
-          send_amount: sendAmount,
-          receive_amount: receiveAmount,
-          rate_used: rateUsed,
-          trade_label: tradeLabel,
-          notes: notes.trim(),
-          status: "pending",
-        })
-        .select()
-        .single();
+  .from("exchange_requests")
+  .insert({
+    user_id: user.id,
+    full_name: fullName.trim(),
+    phone: phone.trim(),
+    send_currency: sendCurrency,
+    receive_currency: receiveCurrency,
+    send_amount: sendAmount,
+    receive_amount: receiveAmount,
+    rate_used: rateUsed,
+    trade_label: tradeLabel,
+    notes: notes.trim(),
+    status: "pending",
+  })
+  .select()
+  .single();
 
-      if (error) {
-        setMessage(error.message || "Could not create exchange request.");
-        setMessageType("warn");
-        return;
-      }
-
-      if (data?.id) {
-        window.location.href = `/trades/${data.id}`;
-        return;
-      }
+if (data?.id) {
+  window.location.href = `/trades/${data.id}`;
+}
 
       setNotes("");
       setMessage("Exchange request submitted successfully.");
