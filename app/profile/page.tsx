@@ -72,20 +72,22 @@ export default function ProfilePage() {
           return;
         }
 
-const profileResult: any = await withTimeout(
-  supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", currentUser.id)
-    .maybeSingle(),
-  8000
-);
+const { data: profileData } = await supabase
+  .from("profiles")
+  .select("*")
+  .eq("id", currentUser.id)
+  .maybeSingle();
 
 const profileData = profileResult?.data;
 
         applyProfile((profileData as UserProfile | null) || null);
 
-        const requestResult: any = await withTimeout(
+        const { data: requestData } = await supabase
+  .from("exchange_requests")
+  .select("id, send_currency, receive_currency, send_amount, receive_amount, status, created_at")
+  .eq("user_id", currentUser.id)
+  .order("created_at", { ascending: false })
+  .limit(10);
   supabase
     .from("exchange_requests")
     .select("id, send_currency, receive_currency, send_amount, receive_amount, status, created_at")
