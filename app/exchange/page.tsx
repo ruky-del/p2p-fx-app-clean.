@@ -38,40 +38,36 @@ function ExchangeContent() {
   const tradeLabel = searchParams.get("tradeLabel") || "Exchange";
 
   useEffect(() => {
-    const syncCurrentUser = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+  const syncCurrentUser = async () => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
 
-        if (!currentUser) {
-          setLoadingUser(false);
-          return;
-        }
+      if (!currentUser) return;
 
-        const { data } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", currentUser.id)
-          .maybeSingle();
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", currentUser.id)
+        .maybeSingle();
 
-        const profileData = (data as UserProfile | null) || null;
-        setProfile(profileData);
-        setFullName(profileData?.full_name || "");
-        setPhone(profileData?.phone || "");
-      } catch (error) {
-        console.error("exchange page user sync error:", error);
-      } finally {
-        setLoadingUser(false);
-      }
-    };
+      const profileData = data || null;
+      setProfile(profileData);
+      setFullName(profileData?.full_name || "");
+      setPhone(profileData?.phone || "");
+    } catch (error) {
+      console.error("exchange page error:", error);
+    } finally {
+      setLoadingUser(false);
+    }
+  };
 
-    syncCurrentUser();
-  }, []);
-
+  syncCurrentUser();
+}, []);
   const formattedReceive = useMemo(() => {
     if (!receiveAmount) return `0 ${receiveCurrency}`;
 
@@ -163,17 +159,14 @@ if (data?.id) {
   };
 
   if (loadingUser) {
-    return (
-      <main className="page">
-        <div className="container">
-          <div className="card">
-            <h1 className="card-title">Loading...</h1>
-            <p className="card-subtitle">Please wait while we prepare your exchange form.</p>
-          </div>
-        </div>
-      </main>
-    );
-  }
+  return (
+    <div className="page">
+      <div className="container">
+        <h2>Preparing your exchange...</h2>
+      </div>
+    </div>
+  );
+}
 
   if (!user) {
     return (
