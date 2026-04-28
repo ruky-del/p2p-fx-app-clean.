@@ -23,15 +23,6 @@ type ExchangeRequest = {
   created_at: string;
 };
 
-const withTimeout = async <T,>(promise: Promise<T>, ms = 8000): Promise<T> => {
-  return await Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error("Request timeout")), ms)
-    ),
-  ]);
-};
-
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -58,10 +49,7 @@ export default function ProfilePage() {
 
         const {
           data: { session },
-          error: sessionError,
-        } = await withTimeout(supabase.auth.getSession(), 8000);
-
-        if (sessionError) throw sessionError;
+        } = await supabase.auth.getSession();
 
         const currentUser = session?.user ?? null;
         setUser(currentUser);
@@ -72,36 +60,29 @@ export default function ProfilePage() {
           return;
         }
 
-const { data: profileData } = await supabase
-  .from("profiles")
-  .select("*")
-  .eq("id", currentUser.id)
-  .maybeSingle();
-
-const profileData = profileResult?.data;
+        // PROFILE
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", currentUser.id)
+          .maybeSingle();
 
         applyProfile((profileData as UserProfile | null) || null);
 
+        // REQUESTS
         const { data: requestData } = await supabase
-  .from("exchange_requests")
-  .select("id, send_currency, receive_currency, send_amount, receive_amount, status, created_at")
-  .eq("user_id", currentUser.id)
-  .order("created_at", { ascending: false })
-  .limit(10);
-  supabase
-    .from("exchange_requests")
-    .select("id, send_currency, receive_currency, send_amount, receive_amount, status, created_at")
-    .eq("user_id", currentUser.id)
-    .order("created_at", { ascending: false })
-    .limit(10),
-  8000
-);
+          .from("exchange_requests")
+          .select(
+            "id, send_currency, receive_currency, send_amount, receive_amount, status, created_at"
+          )
+          .eq("user_id", currentUser.id)
+          .order("created_at", { ascending: false })
+          .limit(10);
 
-const requestData = requestResult?.data;
         setRequests((requestData as ExchangeRequest[]) || []);
       } catch (error) {
         console.error("profile load error:", error);
-        setMessage("Could not load profile. Please refresh.");
+        setMessage("Could not load profile.");
         setMessageType("warn");
       } finally {
         setLoadingPage(false);
@@ -113,7 +94,7 @@ const requestData = requestResult?.data;
 
   const saveProfile = async () => {
     if (!user) {
-      setMessage("Please log in first before updating your profile.");
+      setMessage("Please log in first.");
       setMessageType("warn");
       return;
     }
@@ -129,13 +110,12 @@ const requestData = requestResult?.data;
         email: user.email,
       };
 
-      const { error } = await withTimeout(
-        supabase.from("profiles").upsert(payload, { onConflict: "id" }),
-        8000
-      );
+      const { error } = await supabase
+        .from("profiles")
+        .upsert(payload, { onConflict: "id" });
 
       if (error) {
-        setMessage(error.message || "Could not save profile.");
+        setMessage(error.message);
         setMessageType("warn");
         return;
       }
@@ -151,7 +131,7 @@ const requestData = requestResult?.data;
       setMessage("Profile saved successfully.");
       setMessageType("success");
     } catch (error: any) {
-      setMessage(error?.message || "Could not save profile.");
+      setMessage(error?.message || "Error saving profile.");
       setMessageType("warn");
     } finally {
       setSavingProfile(false);
@@ -163,8 +143,6 @@ const requestData = requestResult?.data;
     setUser(null);
     applyProfile(null);
     setRequests([]);
-    setMessage("You have been logged out.");
-    setMessageType("info");
   };
 
   if (loadingPage) {
@@ -172,8 +150,7 @@ const requestData = requestResult?.data;
       <main className="page">
         <div className="container">
           <div className="card">
-            <h1 className="card-title">Loading...</h1>
-            <p className="card-subtitle">Please wait while we load your profile.</p>
+            <h1>Loading...</h1>
           </div>
         </div>
       </main>
@@ -185,20 +162,10 @@ const requestData = requestResult?.data;
       <main className="page">
         <div className="container">
           <div className="card">
-            <h1 className="card-title">Please log in</h1>
-            <p className="card-subtitle">
-              You need to log in before viewing your profile.
-            </p>
-
-            <div className="stack top-space">
-              <Link href="/?login=1" className="btn btn-primary" style={{ textAlign: "center" }}>
-                Log in / Create account
-              </Link>
-
-              <Link href="/express" className="btn btn-outline" style={{ textAlign: "center" }}>
-                Continue to Express Exchange
-              </Link>
-            </div>
+            <h1>Please log in</h1>
+            <Link href="/?login=1" className="btn btn-primary">
+              Login
+            </Link>
           </div>
         </div>
       </main>
@@ -208,109 +175,47 @@ const requestData = requestResult?.data;
   return (
     <main className="page">
       <div className="container">
-        {message && (
-          <div
-            className={`card ${
-              messageType === "success"
-                ? "message-success"
-                : messageType === "warn"
-                ? "message-warn"
-                : ""
-            }`}
-          >
-            <h2 className="card-title">
-              {messageType === "success" ? "Success" : messageType === "warn" ? "Notice" : "Update"}
-            </h2>
-            <p className="card-subtitle">{message}</p>
-          </div>
-        )}
+        {message && <div className="card">{message}</div>}
 
         <div className="card">
-          <h1 className="card-title">Profile</h1>
-          <p className="card-subtitle">
-            Manage your identity, phone number and available credits.
-          </p>
+          <h1>Profile</h1>
 
-          <div className="form-stack top-space">
-            <label className="input-label">
-              Name
-              <input
-                className="input"
-                placeholder="Full name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-              />
-            </label>
+          <input
+            className="input"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Full name"
+          />
 
-            <label className="input-label">
-              Phone
-              <input
-                className="input"
-                placeholder="Phone number"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            </label>
+          <input
+            className="input"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Phone"
+          />
 
-            <div className="helper-text">Credits Balance: {profile?.credits || 0}</div>
+          <p>Credits: {profile?.credits || 0}</p>
 
-            <button className="btn btn-primary" onClick={saveProfile} disabled={savingProfile} type="button">
-              {savingProfile ? "Saving..." : "Save Profile"}
-            </button>
+          <button className="btn btn-primary" onClick={saveProfile}>
+            Save
+          </button>
 
-            <button className="btn btn-dark" onClick={logout} type="button">
-              Logout
-            </button>
-          </div>
+          <button className="btn btn-dark" onClick={logout}>
+            Logout
+          </button>
         </div>
 
-        <div className="card top-space">
-          <h2 className="card-title">My exchange requests</h2>
+        <div className="card">
+          <h2>My Requests</h2>
 
-          {requests.length === 0 ? (
-            <p className="card-subtitle">No exchange requests yet.</p>
-          ) : (
-            <div className="stack top-space">
-              {requests.map((request) => (
-                <div key={request.id} className="info-card">
-                  <h3>
-                    {request.send_amount} {request.send_currency} →{" "}
-                    {Number(request.receive_amount).toLocaleString()} {request.receive_currency}
-                  </h3>
-                  <p>Status: {request.status}</p>
-                  <p>{new Date(request.created_at).toLocaleString()}</p>
-                  <Link href={`/trades/${request.id}`} className="btn btn-outline">
-                    Open Trade
-                  </Link>
-                </div>
-              ))}
+          {requests.map((r) => (
+            <div key={r.id}>
+              {r.send_amount} {r.send_currency} →{" "}
+              {Number(r.receive_amount).toLocaleString()} {r.receive_currency}
+              <Link href={`/trades/${r.id}`}>Open</Link>
             </div>
-          )}
+          ))}
         </div>
-
-        <div className="card top-space">
-          <h2 className="card-title">Verification Status</h2>
-          <p className="card-subtitle">
-            Not verified yet. Complete verification later to build more buyer trust.
-          </p>
-        </div>
-      </div>
-
-      <div className="nav">
-        <Link href="/">
-          <FiHome />
-          <span>Home</span>
-        </Link>
-
-        <Link href="/market">
-          <FiTrendingUp />
-          <span>Market</span>
-        </Link>
-
-        <Link href="/profile" className="active">
-          <FiUser />
-          <span>Profile</span>
-        </Link>
       </div>
     </main>
   );
