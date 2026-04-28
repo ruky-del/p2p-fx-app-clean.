@@ -61,36 +61,39 @@ export default function TradeRoomPage() {
   };
 
   const acceptTrade = async () => {
-    try {
-      setWorking(true);
+  try {
+    setWorking(true);
 
-      const { error } = await supabase
-        .from("exchange_requests")
-        .update({
-          status: "accepted",
-          payment_step: "awaiting_payment",
-          accepted_at: new Date().toISOString(),
-        })
-        .eq("id", tradeId);
+    const { data, error } = await supabase
+      .from("exchange_requests")
+      .update({
+        status: "accepted",
+        payment_step: "awaiting_payment",
+        accepted_at: new Date().toISOString(),
+      })
+      .eq("id", tradeId)
+      .select()
+      .single();
 
-      if (error) {
-        setMessage(error.message || "Could not accept trade.");
-        setMessageType("warn");
-        return;
-      }
-
-      await addEvent("accepted");
-      setMessage("Trade accepted successfully.");
-      setMessageType("success");
-      await loadTrade();
-    } catch (error) {
-      console.error("acceptTrade error:", error);
-      setMessage("Something went wrong.");
+    if (error) {
+      setMessage(error.message || "Could not accept trade.");
       setMessageType("warn");
-    } finally {
-      setWorking(false);
+      return;
     }
-  };
+
+    setTrade(data);
+    await addEvent("accepted");
+
+    setMessage("Trade accepted successfully.");
+    setMessageType("success");
+  } catch (error) {
+    console.error("acceptTrade error:", error);
+    setMessage("Something went wrong.");
+    setMessageType("warn");
+  } finally {
+    setWorking(false);
+  }
+};
 
   const submitProof = async () => {
     if (!proofUrl.trim()) {
@@ -247,7 +250,7 @@ export default function TradeRoomPage() {
             </div>
 
             <div className="helper-text">
-              You receive: {trade.receive_amount} {trade.receive_currency}
+              You receive: {Number(trade.receive_amount).toLocaleString()} {trade.receive_currency}
             </div>
 
             <div className="helper-text">
