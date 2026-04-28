@@ -257,12 +257,6 @@ export default function HomePage() {
     return;
   }
 
-  if (cooldown > 0) {
-    setMessage(`Please wait ${cooldown} seconds before requesting another code.`);
-    setMessageType("info");
-    return;
-  }
-
   try {
     setAuthLoading(true);
     setMessage("");
@@ -275,11 +269,7 @@ export default function HomePage() {
     });
 
     if (error) {
-      setMessage(
-        error.message === "email rate limit exceeded"
-          ? "Too many login requests were made. Please wait a short moment and try again."
-          : error.message
-      );
+      setMessage(error.message);
       setMessageType("warn");
       return;
     }
@@ -288,9 +278,8 @@ export default function HomePage() {
     setCooldown(30);
     setMessage("Check your email for your login code.");
     setMessageType("info");
-  } catch (error) {
-    console.error("Send code error:", error);
-    setMessage("We could not send your login code. Please try again.");
+  } catch (error: any) {
+    setMessage(error?.message || "Could not send login code.");
     setMessageType("warn");
   } finally {
     setAuthLoading(false);
@@ -299,13 +288,14 @@ export default function HomePage() {
 
   const handleVerifyCode = async () => {
   if (!authEmail.trim() || !authCode.trim()) {
-    setMessage("Please enter both your email address and the login code.");
+    setMessage("Please enter both email and code.");
     setMessageType("warn");
     return;
   }
 
   try {
     setAuthLoading(true);
+    setMessage("");
 
     const { error } = await supabase.auth.verifyOtp({
       email: authEmail.trim(),
@@ -314,33 +304,20 @@ export default function HomePage() {
     });
 
     if (error) {
-      setMessage("The code is invalid or has expired. Please request a new one.");
+      setMessage("The code is invalid or expired.");
       setMessageType("warn");
       return;
     }
 
-    await syncCurrentUser();
-
     const params = new URLSearchParams(window.location.search);
     const next = params.get("next");
-
-    setAuthStep("email");
-    setAuthCode("");
-    setAuthEmail("");
 
     setMessage("Login successful.");
     setMessageType("success");
 
-    setTimeout(() => {
-      if (next) {
-        window.location.href = next;
-      } else {
-        window.location.href = "/profile";
-      }
-    }, 400);
-  } catch (error) {
-    console.error("Verify code error:", error);
-    setMessage("We could not verify your code. Please try again.");
+    window.location.href = next || "/profile";
+  } catch (error: any) {
+    setMessage(error?.message || "Could not verify code.");
     setMessageType("warn");
   } finally {
     setAuthLoading(false);
